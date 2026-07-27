@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es-CR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<title>ONYX · Panel de citas</title>
+<style>
+  @font-face { font-family:'Brown Sugar'; src:url('assets/fonts/BrownSugar.ttf') format('truetype'); font-display:swap; }
+  @font-face { font-family:'HN Cn'; src:url('assets/fonts/HelveticaNeueLTProCn.otf') format('opentype'); font-display:swap; }
+  :root{ --bg:#0b0b0d; --panel:#141416; --line:rgba(255,255,255,.12); --line2:rgba(255,255,255,.07); --tx:#f3f3f4; --tx2:rgba(255,255,255,.6); --tx3:rgba(255,255,255,.4); --ok:#7fd4a8; --err:#e8837c; }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--tx);font-family:'HN Cn',system-ui,-apple-system,Arial,sans-serif;-webkit-font-smoothing:antialiased;line-height:1.55;}
+  a{color:inherit;}
+  ::selection{background:#fff;color:#000;}
+
+  header.bar{position:sticky;top:0;z-index:10;display:flex;align-items:center;gap:14px;height:64px;padding:0 clamp(16px,4vw,40px);background:rgba(9,9,11,.86);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);}
+  header.bar .iso{width:26px;height:26px;border-radius:6px;background:#fff;color:#000;display:flex;align-items:center;justify-content:center;font-family:Georgia,serif;font-size:19px;font-weight:700;}
+  header.bar .ttl{font-weight:700;letter-spacing:.26em;font-size:14px;text-transform:uppercase;}
+  header.bar .who{margin-left:auto;color:var(--tx3);font-size:12px;letter-spacing:.06em;}
+  header.bar button.link{background:none;border:0;color:var(--tx2);cursor:pointer;font:inherit;font-size:12.5px;letter-spacing:.06em;text-decoration:underline;padding:8px;}
+
+  main{max-width:820px;margin:0 auto;padding:clamp(20px,4vw,40px);}
+
+  /* Login */
+  .login{max-width:380px;margin:12vh auto 0;text-align:center;}
+  .login h1{font-family:'Brown Sugar',Georgia,serif;font-weight:400;font-size:40px;margin:0 0 6px;}
+  .login p{color:var(--tx2);font-size:14px;margin:0 0 24px;}
+  .field{display:block;width:100%;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px 16px;font:inherit;font-size:16px;color:#fff;outline:none;margin-bottom:12px;}
+  .field:focus{border-color:rgba(255,255,255,.4);}
+  .btn{width:100%;background:#fff;color:#000;border:0;border-radius:99px;padding:15px;font:inherit;font-weight:700;font-size:14px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;}
+  .btn:disabled{opacity:.6;cursor:default;}
+  .msg{min-height:20px;font-size:13.5px;margin-top:14px;}
+  .msg.err{color:var(--err);}
+  .msg.ok{color:var(--ok);}
+  .hint{margin-top:22px;font-size:12px;color:var(--tx3);line-height:1.6;}
+
+  /* Lista */
+  .tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;align-items:center;}
+  .tab{background:none;border:1px solid var(--line);color:var(--tx2);border-radius:99px;padding:9px 16px;font:inherit;font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;}
+  .tab.on{background:#fff;color:#000;border-color:#fff;font-weight:700;}
+  .tab.refresh{margin-left:auto;}
+  .daygroup{margin-bottom:26px;}
+  .dayhdr{font-family:'HN Cn';font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--tx3);padding-bottom:10px;border-bottom:1px solid var(--line2);margin-bottom:12px;}
+  .card{display:flex;gap:16px;align-items:flex-start;background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:10px;}
+  .card.cancelled{opacity:.5;}
+  .card .time{font-family:'Brown Sugar',Georgia,serif;font-size:22px;line-height:1.1;white-space:nowrap;min-width:82px;}
+  .card .time small{display:block;font-family:'HN Cn';font-size:11px;letter-spacing:.06em;color:var(--tx3);}
+  .card .body{flex:1;min-width:0;}
+  .card .name{font-weight:700;font-size:16px;}
+  .card .svc{color:var(--tx2);font-size:13.5px;margin-top:2px;}
+  .card .meta{margin-top:8px;display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13px;}
+  .card .meta a{color:var(--ok);text-decoration:none;}
+  .card .meta a.mail{color:var(--tx2);}
+  .card .note{margin-top:8px;font-size:13px;color:var(--tx2);font-style:italic;border-left:2px solid var(--line);padding-left:10px;}
+  .card .sync{margin-top:9px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;font-size:12px;color:var(--tx3);}
+  .card .sync .ok{color:var(--ok);}
+  .card .sync .warn{color:#e8c07c;}
+  .card .sync .why{color:var(--tx3);font-size:11.5px;width:100%;word-break:break-word;}
+  .card .sync button{background:none;border:1px solid var(--line);color:var(--tx2);border-radius:7px;padding:3px 10px;font:inherit;font-size:11.5px;cursor:pointer;}
+  .card .sync button:hover{border-color:rgba(255,255,255,.4);color:#fff;}
+  .card .sync button:disabled{opacity:.5;cursor:default;}
+  .card .cancel{background:none;border:1px solid var(--line);color:var(--tx2);border-radius:8px;width:34px;height:34px;font-size:16px;cursor:pointer;flex-shrink:0;}
+  .card .cancel:hover{border-color:var(--err);color:var(--err);}
+  /* Código corto de la cita: es el que el cliente manda en su WhatsApp. */
+  .ref{margin-left:8px;font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.06em;color:var(--tx3);border:1px solid var(--line);border-radius:5px;padding:1px 5px;vertical-align:middle;cursor:help;}
+  /* Cuadro para elegir cómo se quita una cita */
+  .modalbg{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;padding:20px;z-index:60;}
+  .modal{background:#141416;border:1px solid var(--line);border-radius:18px;padding:24px;max-width:400px;width:100%;}
+  .modal h3{margin:0 0 8px;font-size:18px;}
+  .modal p{margin:0 0 18px;font-size:14px;color:var(--tx2);line-height:1.55;}
+  .mb{display:block;width:100%;margin-bottom:9px;padding:14px 16px;border-radius:12px;border:1px solid var(--line);background:none;color:var(--tx);font:inherit;font-size:14px;cursor:pointer;text-align:left;}
+  .mb:hover{border-color:rgba(255,255,255,.42);}
+  .mb.primary{background:#fff;color:#000;border-color:#fff;font-weight:700;}
+  .mb.ghost{text-align:center;color:var(--tx3);border-color:transparent;margin-bottom:0;}
+  .badge{display:inline-block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;background:#fff;color:#000;border-radius:5px;padding:2px 7px;font-weight:700;vertical-align:middle;margin-left:8px;}
+  .empty{text-align:center;color:var(--tx3);padding:60px 20px;font-size:15px;}
+  .count{color:var(--tx3);font-size:13px;margin-bottom:16px;}
+  [hidden]{display:none !important;}
+</style>
+</head>
+<body>
+<header class="bar" id="topbar" hidden>
+  <div class="iso">O</div>
+  <div class="ttl">ONYX</div>
+  <div class="who" id="whoami"></div>
+  <button class="link" id="logout">Cerrar sesión</button>
+</header>
+
+<main>
+  <!-- LOGIN -->
+  <section class="login" id="loginView">
+    <div class="iso" style="width:44px;height:44px;border-radius:10px;font-size:30px;margin:0 auto 18px;">O</div>
+    <h1>Panel del barbero</h1>
+    <p>Acceso privado del dueño de ONYX.</p>
+    <form id="loginForm" autocomplete="on">
+      <input class="field" id="email" type="email" placeholder="Correo" autocomplete="username" required>
+      <input class="field" id="password" type="password" placeholder="Contraseña" autocomplete="current-password" required>
+      <button class="btn" id="loginBtn" type="submit">Entrar</button>
+    </form>
+    <div class="msg" id="loginMsg"></div>
+    <div class="hint" id="loginHint"></div>
+  </section>
+
+  <!-- CITAS -->
+  <section id="appView" hidden>
+    <div class="tabs">
+      <button class="tab on" data-filter="upcoming">Próximas</button>
+      <button class="tab" data-filter="all">Todas</button>
+      <button class="tab refresh" id="refresh">↻ Actualizar</button>
+    </div>
+    <div class="count" id="count"></div>
+    <div id="list"></div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="onyx-config.js"></script>
+<script>
+(function(){
+  const URL = window.ONYX_SB_URL, KEY = window.ONYX_SB_KEY, OWNER = (window.ONYX_OWNER_EMAIL||'').toLowerCase();
+  const sb = window.supabase.createClient(URL, KEY);
+
+  const $ = (id) => document.getElementById(id);
+  const MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+  const DOW = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+  const pad = (n) => String(n).padStart(2,'0');
+  const ymd = (d) => d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate());
+  const esc = (s) => String(s==null?'':s).replace(/[&<>"']/g,(c)=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const to12 = (m) => { const h=Math.floor(m/60), mm=m%60, h12=h%12===0?12:h%12, ap=h<12?'am':'pm'; return h12+':'+pad(mm)+' '+ap; };
+  const fmtDate = (s) => { const d=new Date(s+'T00:00:00'); return DOW[d.getDay()]+' '+d.getDate()+' de '+MONTHS[d.getMonth()]; };
+
+  let filter = 'upcoming';
+
+  // ---------- AUTH ----------
+  async function refreshAuth(){
+    const { data:{ session } } = await sb.auth.getSession();
+    if (session && (session.user.email||'').toLowerCase() === OWNER) {
+      showApp(session.user.email); loadBookings();
+    } else if (session) {
+      // Sesión de un correo que no es el dueño.
+      await sb.auth.signOut(); showLogin('Esta cuenta no tiene acceso a la consola.','err');
+    } else {
+      showLogin('');
+    }
+  }
+  function showLogin(text, cls){
+    $('appView').hidden = true; $('topbar').hidden = true; $('loginView').hidden = false;
+    const m=$('loginMsg'); m.textContent=text||''; m.className='msg '+(cls||'');
+    $('loginHint').innerHTML = 'Si es la primera vez: creá el usuario del dueño en Supabase → Authentication → Users → <b>Add user</b> (con “Auto Confirm”), usando el correo autorizado.';
+  }
+  function showApp(email){
+    $('loginView').hidden = true; $('appView').hidden = false; $('topbar').hidden = false;
+    $('whoami').textContent = email;
+  }
+
+  $('loginForm').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const email = $('email').value.trim(), password = $('password').value;
+    const btn=$('loginBtn'); btn.disabled=true; btn.textContent='Entrando…';
+    const m=$('loginMsg'); m.textContent=''; m.className='msg';
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    btn.disabled=false; btn.textContent='Entrar';
+    if (error) { m.textContent = 'Correo o contraseña incorrectos.'; m.className='msg err'; return; }
+    if ((data.user.email||'').toLowerCase() !== OWNER) { await sb.auth.signOut(); m.textContent='Esta cuenta no tiene acceso.'; m.className='msg err'; return; }
+    showApp(data.user.email); loadBookings();
+  });
+  $('logout').addEventListener('click', async () => { await sb.auth.signOut(); showLogin('Sesión cerrada.','ok'); });
+
+  // ---------- CITAS ----------
+  document.querySelectorAll('.tab[data-filter]').forEach((t) => t.addEventListener('click', () => {
+    document.querySelectorAll('.tab[data-filter]').forEach((x)=>x.classList.remove('on'));
+    t.classList.add('on'); filter = t.getAttribute('data-filter'); loadBookings();
+  }));
+  $('refresh').addEventListener('click', loadBookings);
+
+  async function loadBookings(){
+    const list=$('list'); list.innerHTML='<div class="empty">Cargando…</div>';
+    let q = sb.from('bookings').select('*').order('booking_date',{ascending:true}).order('start_min',{ascending:true});
+    if (filter==='upcoming') q = q.gte('booking_date', ymd(new Date())).eq('status','confirmed');
+    const { data, error } = await q;
+    if (error) { list.innerHTML='<div class="empty">No se pudieron cargar las citas.<br>'+esc(error.message)+'</div>'; $('count').textContent=''; return; }
+    render(data||[]);
+  }
+
+  function render(rows){
+    const list=$('list');
+    window.__rows = rows;   // lo usa el botón de reintentar para saber si la cita está cancelada
+    const active = rows.filter((r)=>r.status==='confirmed').length;
+    $('count').textContent = active + (active===1?' cita activa':' citas activas') + (filter==='all' && rows.length>active ? ' · '+(rows.length-active)+' cancelada(s)' : '');
+    if (!rows.length){ list.innerHTML='<div class="empty">No hay citas'+(filter==='upcoming'?' próximas':'')+'.</div>'; return; }
+    const todayStr = ymd(new Date());
+    const groups = {};
+    rows.forEach((r)=>{ (groups[r.booking_date]=groups[r.booking_date]||[]).push(r); });
+    let html='';
+    Object.keys(groups).sort().forEach((date)=>{
+      const isToday = date===todayStr;
+      html += '<div class="daygroup"><div class="dayhdr">'+esc(fmtDate(date))+(isToday?'<span class="badge">Hoy</span>':'')+'</div>';
+      groups[date].forEach((r)=>{
+        const cancelled = r.status!=='confirmed';
+        const phone = String(r.customer_phone||'').replace(/\D/g,'');
+        const wa = phone ? '<a href="https://wa.me/'+phone+'" target="_blank" rel="noopener">WhatsApp '+esc(r.customer_phone)+' ›</a>' : '';
+        const mail = r.customer_email ? '<a class="mail" href="mailto:'+esc(r.customer_email)+'">'+esc(r.customer_email)+'</a>' : '';
+        html += '<div class="card'+(cancelled?' cancelled':'')+'">'
+          + '<div class="time">'+to12(r.start_min).replace(' ','<small>').replace(/(am|pm)/,'$1</small>')+'</div>'
+          + '<div class="body">'
+          + '<div class="name">'+esc(r.customer_name)+'<span class="ref" title="Código de la cita: el cliente te lo manda en su WhatsApp">#'+esc(refDe(r.id))+'</span>'+(cancelled?'<span class="badge" style="background:#555;color:#fff">Cancelada</span>':'')+'</div>'
+          + '<div class="svc">'+esc(r.service)+' · '+r.duration_min+' min'+(r.price?' · '+esc(r.price):'')+'</div>'
+          + '<div class="meta">'+wa+mail+'</div>'
+          + (r.message?'<div class="note">'+esc(r.message)+'</div>':'')
+          + syncRow(r)
+          + '</div>'
+          + (cancelled?'':'<button class="cancel" title="Cancelar cita" data-cancel="'+r.id+'">×</button>')
+          + '</div>';
+      });
+      html += '</div>';
+    });
+    list.innerHTML = html;
+    list.querySelectorAll('[data-cancel]').forEach((b)=>b.addEventListener('click', ()=>cancelBooking(b.getAttribute('data-cancel'))));
+    list.querySelectorAll('[data-retry]').forEach((b)=>b.addEventListener('click', ()=>retrySync(b, b.getAttribute('data-retry'))));
+  }
+
+  // ---------- FASE 2: calendario + correos ----------
+  // Estado de sincronización de cada cita, con botón para reintentar.
+  function syncRow(r){
+    const cancelled = r.status!=='confirmed';
+    const err = r.notify_error ? '<span class="why">'+esc(r.notify_error)+'</span>' : '';
+    const btn = (txt) => '<button data-retry="'+r.id+'">'+txt+'</button>';
+    if (cancelled){
+      // Texto neutro a propósito: la cita se pudo haber quitado avisándole al
+      // cliente o en silencio (porque él ya avisó por WhatsApp). Esto vale para ambas.
+      if (r.cancel_notified_at && !r.notify_error) return '<div class="sync"><span class="ok">✓ Hora liberada · fuera del calendario</span></div>';
+      return '<div class="sync"><span class="warn">⚠ Quedó a medias</span>'+btn('Reintentar')+err+'</div>';
+    }
+    if (r.notified_at && !r.notify_error) return '<div class="sync"><span class="ok">✓ En tu calendario · correo enviado</span>'+btn('Reenviar')+'</div>';
+    if (r.notified_at && r.notify_error) return '<div class="sync"><span class="warn">⚠ Se sincronizó a medias</span>'+btn('Reintentar')+err+'</div>';
+    return '<div class="sync"><span class="warn">⏳ Sin sincronizar</span>'+btn('Sincronizar')+err+'</div>';
+  }
+
+  // Llama a la función del servidor (Edge Function "confirmar-cita").
+  async function notify(id, accion, forzar, sinCorreo){
+    const { data, error } = await sb.functions.invoke('confirmar-cita', { body:{ id:id, accion:accion, forzar:!!forzar, sinCorreo:!!sinCorreo } });
+    if (error) throw new Error(error.message || 'No se pudo contactar al servidor.');
+    if (data && data.errores) throw new Error(data.errores.join(' · '));
+    return data;
+  }
+
+  async function retrySync(btn, id){
+    const row = (window.__rows||[]).find((x)=>x.id===id);
+    const accion = row && row.status!=='confirmed' ? 'cancelada' : 'nueva';
+    btn.disabled = true; btn.textContent = 'Enviando…';
+    try {
+      const res = await notify(id, accion, true);
+      if (res && res.aviso) window.alert(res.aviso + '\n\nRevisá los "secrets" de la función en Supabase (ver FASE-2-GUIA.md).');
+    } catch (e) {
+      window.alert('No se pudo sincronizar:\n\n'+e.message);
+    }
+    loadBookings();
+  }
+
+  // Código corto de la cita. Es lo que el cliente manda en su WhatsApp, para
+  // que puedas saber de cuál cita te está hablando sin preguntarle nada.
+  function refDe(id){ return String(id||'').replace(/-/g,'').slice(0,6).toUpperCase(); }
+
+  // Preguntar con dos salidas distintas: no es lo mismo cancelar vos una cita
+  // (hay que avisarle al cliente) que quitar una que él ya te canceló por WhatsApp.
+  function preguntarComoQuitar(){
+    return new Promise((resolve)=>{
+      const bg = document.createElement('div');
+      bg.className = 'modalbg';
+      bg.innerHTML =
+        '<div class="modal">'
+        + '<h3>¿Cómo querés quitarla?</h3>'
+        + '<p>En los dos casos la hora queda libre otra vez y el evento se borra de tu Google Calendar.</p>'
+        + '<button class="mb primary" data-r="avisar">Cancelar y avisarle al cliente</button>'
+        + '<button class="mb" data-r="callado">Solo quitarla · ya me avisó él</button>'
+        + '<button class="mb ghost" data-r="">Volver</button>'
+        + '</div>';
+      bg.addEventListener('click',(e)=>{
+        const b = e.target.closest('[data-r]');
+        if (!b && e.target !== bg) return;
+        const v = b ? b.getAttribute('data-r') : '';
+        document.body.removeChild(bg);
+        resolve(v);
+      });
+      document.body.appendChild(bg);
+    });
+  }
+
+  async function cancelBooking(id){
+    const modo = await preguntarComoQuitar();
+    if (!modo) return;
+    const avisar = modo === 'avisar';
+    const { error } = await sb.from('bookings').update({ status:'cancelled' }).eq('id', id);
+    if (error) { window.alert('No se pudo cancelar: '+error.message); return; }
+    loadBookings();
+    // Borrar el evento del calendario y avisarle al cliente. Si falla, la cita ya
+    // quedó cancelada igual y se puede reintentar con el botón de la tarjeta.
+    try { await notify(id, 'cancelada', false, !avisar); } catch (e) { /* queda marcado en la tarjeta */ }
+    loadBookings();
+  }
+
+  // Recargar al volver a la pestaña + refresco periódico mientras esté abierta.
+  document.addEventListener('visibilitychange', ()=>{ if (!document.hidden && !$('appView').hidden) loadBookings(); });
+  setInterval(()=>{ if (!$('appView').hidden) loadBookings(); }, 30000);
+
+  refreshAuth();
+})();
+</script>
+</body>
+</html>

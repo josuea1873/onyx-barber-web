@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ONYX Barber Studio — Barbería en Ciudad Quesada, Costa Rica</title>
+<meta name="description" content="Barbería en Ciudad Quesada: fades, corte clásico, barba y corte infantil. Reservá tu cita en línea o por WhatsApp al 7086 1607. Lun–Vie 9–19 · Sáb 8–18.">
+<meta name="theme-color" content="#000000">
+<link rel="canonical" href="https://onyx-barber.vercel.app/">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ONYX Barber Studio — Ciudad Quesada">
+<meta property="og:description" content="Fades, clásico, barba y corte infantil. Reservá tu cita en línea o por WhatsApp.">
+<meta property="og:image" content="assets/onyx-full-white.png">
+<meta property="og:locale" content="es_CR">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="assets/onyx-iso-official-white.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"HairSalon","name":"ONYX Barber Studio","image":"assets/onyx-full-white.png","telephone":"+50670861607","address":{"@type":"PostalAddress","addressLocality":"Ciudad Quesada","addressRegion":"Alajuela","addressCountry":"CR"},"priceRange":"₡4.000–₡8.000","openingHoursSpecification":[{"@type":"OpeningHoursSpecification","dayOfWeek":["Monday","Tuesday","Wednesday","Thursday","Friday"],"opens":"09:00","closes":"19:00"},{"@type":"OpeningHoursSpecification","dayOfWeek":"Saturday","opens":"08:00","closes":"18:00"}]}
+</script>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<template id="__bundler_thumbnail"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect width="200" height="200" fill="#000"/><text x="100" y="128" font-family="Georgia,serif" font-size="110" fill="#fff" text-anchor="middle">O</text></svg></template>
+<helmet>
+<style>
+  @font-face { font-family:'Brown Sugar'; src:url('assets/fonts/BrownSugar.ttf') format('truetype'); font-weight:normal; font-style:normal; font-display:swap; }
+  @font-face { font-family:'HN Cn'; src:url('assets/fonts/HelveticaNeueLTProCn.otf') format('opentype'); font-weight:400; font-style:normal; font-display:swap; }
+  html { scroll-behavior:smooth; }
+  html, body { margin:0; padding:0; background:#000; }
+  body { font-family:'HN Cn','Arial Narrow',sans-serif; -webkit-font-smoothing:antialiased; color:#fff; }
+  * { box-sizing:border-box; }
+  ::selection { background:#fff; color:#000; }
+  @keyframes onyxPulse { 0%,100% { transform:scale(1); opacity:.6; } 50% { transform:scale(1.4); opacity:0; } }
+
+  /* ===================== RESPONSIVE / MÓVIL ===================== */
+  #nav-burger { display:none; }
+
+  /* --- Nav: hamburguesa en teléfono/tablet angosta --- */
+  @media (max-width: 760px) {
+    #nav-burger { display:inline-flex !important; }
+    #nav-links {
+      position:fixed !important; top:70px; left:0; right:0;
+      flex-direction:column !important; align-items:stretch !important; gap:0 !important;
+      background:rgba(8,8,10,.97); backdrop-filter:blur(16px);
+      border-bottom:1px solid rgba(255,255,255,.12);
+      padding:6px 0 10px; max-height:0; overflow:hidden;
+      opacity:0; pointer-events:none;
+      transition:max-height .32s ease, opacity .25s ease, padding .32s ease;
+    }
+    #nav-links.open { max-height:75vh !important; opacity:1 !important; pointer-events:auto !important; }
+    #nav-links > a {
+      padding:15px clamp(20px,6vw,40px) !important;
+      font-size:15px !important; letter-spacing:.14em !important;
+      border-top:1px solid rgba(255,255,255,.06);
+    }
+  }
+
+  /* --- Galería de cortes: 2 columnas en móvil --- */
+  @media (max-width: 640px) {
+    #cortes-grid { grid-template-columns:repeat(2,1fr) !important; grid-auto-rows:140px !important; }
+    #cortes-grid > div { grid-column:span 1 !important; }
+    #cortes-grid > div:nth-child(1),
+    #cortes-grid > div:nth-child(6) { grid-column:span 2 !important; }
+  }
+
+  /* --- Ajustes finos de lectura en teléfono --- */
+  @media (max-width: 480px) {
+    #ox-booking { min-height:300px; }
+  }
+</style>
+<script src="image-slot.js"></script>
+<!-- Fondo animado Vanta WAVES: three.js r134 (fijo por compatibilidad con Vanta 0.5.24) + build WAVES. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/vanta/0.5.24/vanta.waves.min.js"></script>
+<!-- Backend de reservas: cliente de Supabase + config con las llaves públicas. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="onyx-config.js"></script>
+</helmet>
+
+<div style="background:#000; overflow-x:hidden;">
+
+  <!-- Fondo animado: malla 3D de olas (z-index 0) + velo negro para legibilidad (z-index 0). -->
+  <div id="ox-vanta" style="position:fixed; inset:0; z-index:0;"></div>
+  <div style="position:fixed; inset:0; z-index:0; background:rgba(0,0,0,.55); pointer-events:none;"></div>
+
+  <!-- Todo el contenido va encima de las dos capas fijas. -->
+  <div style="position:relative; z-index:1;">
+
+  <nav style="position:fixed; top:0; left:0; right:0; z-index:50; display:flex; align-items:center; justify-content:space-between; height:70px; padding:0 clamp(20px,5vw,64px); background:rgba(0,0,0,.6); backdrop-filter:blur(14px); border-bottom:1px solid rgba(255,255,255,.1);">
+    <a href="#top" style="display:flex; align-items:center; gap:11px; text-decoration:none;">
+      <img src="assets/onyx-iso-official-white.png" alt="" style="height:30px; width:auto;">
+      <span style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:15px; letter-spacing:.34em; color:#fff;">ONYX</span>
+    </a>
+    <div style="display:flex; align-items:center; gap:clamp(12px,2.4vw,26px);">
+      <div id="nav-links" style="display:flex; align-items:center; gap:clamp(14px,2.4vw,34px);">
+        <a href="#cortes" style="font-family:'HN Cn',sans-serif; font-size:13px; letter-spacing:.22em; color:rgba(255,255,255,.72); text-decoration:none; text-transform:uppercase; transition:color .25s ease;" style-hover="color:#fff;">Cortes</a>
+        <a href="#servicios" style="font-family:'HN Cn',sans-serif; font-size:13px; letter-spacing:.22em; color:rgba(255,255,255,.72); text-decoration:none; text-transform:uppercase; transition:color .25s ease;" style-hover="color:#fff;">Servicios</a>
+        <a href="#fidelidad" style="font-family:'HN Cn',sans-serif; font-size:13px; letter-spacing:.22em; color:rgba(255,255,255,.72); text-decoration:none; text-transform:uppercase; transition:color .25s ease;" style-hover="color:#fff;">Fidelidad</a>
+        <a href="#ubicacion" style="font-family:'HN Cn',sans-serif; font-size:13px; letter-spacing:.22em; color:rgba(255,255,255,.72); text-decoration:none; text-transform:uppercase; transition:color .25s ease;" style-hover="color:#fff;">Ubicación</a>
+        <a href="#redes" style="font-family:'HN Cn',sans-serif; font-size:13px; letter-spacing:.22em; color:rgba(255,255,255,.72); text-decoration:none; text-transform:uppercase; transition:color .25s ease;" style-hover="color:#fff;">Redes</a>
+      </div>
+      <button id="nav-burger" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="nav-links" style="align-items:center; justify-content:center; width:42px; height:42px; border:1px solid rgba(255,255,255,.22); border-radius:11px; background:rgba(255,255,255,.05); cursor:pointer; padding:0; flex-shrink:0;">
+        <span style="position:relative; display:block; width:18px; height:2px; background:#fff; box-shadow:0 -6px 0 #fff, 0 6px 0 #fff;"></span>
+      </button>
+      <a href="#reservar" style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:13px; letter-spacing:.18em; color:#000; text-decoration:none; text-transform:uppercase; background:#fff; padding:10px 20px; border-radius:99px; transition:transform .25s ease, box-shadow .25s ease; white-space:nowrap; flex-shrink:0;" style-hover="transform:translateY(-2px); box-shadow:0 8px 20px rgba(255,255,255,.25);">Reservar</a>
+    </div>
+  </nav>
+
+  <header id="top" style="position:relative; min-height:100vh; display:flex; align-items:center; justify-content:center; overflow:hidden; padding:110px 24px 84px;">
+    <div style="position:absolute; inset:0; background:radial-gradient(120% 80% at 50% 0%, rgba(255,255,255,.10), transparent 60%);"></div>
+    <div style="position:relative; display:flex; flex-direction:column; align-items:center; text-align:center; gap:30px;">
+      <img src="assets/onyx-full-white.png" alt="ONYX Barber Studio" style="width:min(82vw,380px); height:auto; display:block;">
+      <div style="display:flex; flex-direction:column; align-items:center; gap:22px;">
+        <div style="width:52px; height:1px; background:rgba(255,255,255,.5);"></div>
+        <div style="font-family:'Brown Sugar',serif; font-size:clamp(34px,6.2vw,58px); line-height:1; color:#fff;">Estilo tallado al detalle</div>
+        <p style="margin:0; max-width:440px; font-family:'HN Cn',sans-serif; font-size:16px; line-height:1.65; color:rgba(255,255,255,.66);">Cortes y barba con precisión en Ciudad Quesada. Un espacio para salir con más presencia.</p>
+        <div style="display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:4px;">
+          <a href="#reservar" style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:14px; letter-spacing:.16em; text-transform:uppercase; color:#000; background:#fff; padding:15px 30px; border-radius:99px; text-decoration:none; transition:transform .25s ease, box-shadow .25s ease;" style-hover="transform:translateY(-2px); box-shadow:0 10px 24px rgba(255,255,255,.25);">Reservar cita</a>
+          <a href="#cortes" style="font-family:'HN Cn',sans-serif; font-weight:400; font-size:14px; letter-spacing:.16em; text-transform:uppercase; color:#fff; border:1px solid rgba(255,255,255,.32); padding:15px 30px; border-radius:99px; text-decoration:none; transition:border-color .25s ease, background .25s ease;" style-hover="border-color:#fff; background:rgba(255,255,255,.08);">Ver cortes</a>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute; bottom:26px; left:50%; transform:translateX(-50%); font-family:'HN Cn',sans-serif; font-size:10.5px; letter-spacing:.34em; color:rgba(255,255,255,.4); text-transform:uppercase;">Deslizá</div>
+  </header>
+
+  <section id="cortes" style="scroll-margin-top:70px; padding:clamp(70px,10vw,120px) clamp(20px,5vw,64px); max-width:1240px; margin:0 auto;">
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; flex-wrap:wrap; gap:16px; margin-bottom:40px;">
+      <div data-title-block data-dir="left">
+        <div style="font-family:'HN Cn',sans-serif; font-size:12px; letter-spacing:.4em; color:rgba(255,255,255,.5); text-transform:uppercase;">Galería</div>
+        <h2 style="margin:18px 0 0; font-family:'Brown Sugar',serif; font-weight:400; font-size:clamp(46px,7.6vw,76px); line-height:.95; color:#fff;">Cortes con precisión</h2>
+      </div>
+      <p data-title-block data-dir="right" style="margin:0; max-width:320px; font-family:'HN Cn',sans-serif; font-size:14px; line-height:1.6; color:rgba(255,255,255,.6);">Fade, barba, clásico y diseño. Mirá el trabajo del estudio.</p>
+    </div>
+    <div data-reveal id="cortes-grid" style="display:grid; grid-template-columns:repeat(4,1fr); grid-auto-rows:190px; gap:14px; grid-auto-flow:dense;">
+      <div style="position:relative; grid-column:span 2; grid-row:span 2; perspective:1600px;" style-hover="filter:brightness(1.06);">
+        <div onClick="{{ onFade }}" style="position:relative; width:100%; height:100%; cursor:pointer; transform-style:preserve-3d; transition:transform .85s cubic-bezier(.22,1,.36,1); transform:{{ flipFade }};">
+          <div style="position:absolute; inset:0; backface-visibility:hidden; border-radius:12px; overflow:hidden;">
+            <img src="assets/cortes/fade.jpg" alt="Fade" style="width:100%; height:100%; object-fit:cover; object-position:center 60%; display:block;">
+            <span style="position:absolute; left:14px; bottom:12px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:12px; letter-spacing:.18em; color:#fff; text-transform:uppercase; text-shadow:0 1px 6px rgba(0,0,0,.6); pointer-events:none;">Fade</span>
+            <div style="position:absolute; top:3px; right:3px; width:44px; height:44px; border-radius:50%; border:1px solid rgba(255,255,255,.55); animation:onyxPulse 2.2s ease-in-out infinite; pointer-events:none;"></div>
+            <div style="position:absolute; top:12px; right:12px; width:26px; height:26px; border-radius:50%; background:rgba(0,0,0,.55); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; pointer-events:none;"><span style="font-family:Georgia,serif; font-style:italic; font-weight:700; font-size:14px; color:#fff;">i</span></div>
+          </div>
+          <div style="position:absolute; inset:0; backface-visibility:hidden; transform:rotateY(180deg); border-radius:12px; background:linear-gradient(160deg,#1c1c1e,#0c0c0d); border:1px solid rgba(255,255,255,.14); padding:20px; display:flex; flex-direction:column; justify-content:space-between; gap:10px; overflow:hidden; box-shadow:0 24px 50px rgba(0,0,0,.5);">
+            <div style="position:absolute; inset:0; opacity:.06; background-image:repeating-linear-gradient(45deg,#fff 0 1px,transparent 1px 15px),repeating-linear-gradient(-45deg,#fff 0 1px,transparent 1px 15px); pointer-events:none;"></div>
+            <div style="position:absolute; top:12px; left:14px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:10.5px; letter-spacing:.1em; color:rgba(255,255,255,.32);">FD</div>
+            <div style="position:absolute; bottom:12px; right:14px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:10.5px; letter-spacing:.1em; color:rgba(255,255,255,.32); transform:rotate(180deg);">FD</div>
+            <div style="position:relative;">
+              <div style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:14px; letter-spacing:.14em; color:#fff; text-transform:uppercase;">Fade</div>
+              <p style="margin:8px 0 0; max-width:300px; font-family:'HN Cn',sans-serif; font-size:13px; line-height:1.55; color:rgba(255,255,255,.65);">Degradado progresivo de corto a los lados hacia más largo arriba, sin líneas marcadas. Limpio, versátil y se adapta a cualquier forma de rostro.</p>
+            </div>
+            <div style="position:relative; display:flex; align-items:flex-end; justify-content:space-between; gap:14px; border-top:1px solid rgba(255,255,255,.12); padding-top:10px;">
+              <div style="display:flex; gap:18px;">
+                <div><div style="font-family:'HN Cn',sans-serif; font-size:9.5px; letter-spacing:.12em; color:rgba(255,255,255,.4); text-transform:uppercase;">Duración</div><div style="font-family:'HN Cn',sans-serif; font-size:12.5px; color:#fff; margin-top:2px;">45–60 min</div></div>
+                <div><div style="font-family:'HN Cn',sans-serif; font-size:9.5px; letter-spacing:.12em; color:rgba(255,255,255,.4); text-transform:uppercase;">Retoque</div><div style="font-family:'HN Cn',sans-serif; font-size:12.5px; color:#fff; margin-top:2px;">2–3 semanas</div></div>
+              </div>
+              <a href="#reservar" onClick="{{ stopProp }}" style="flex-shrink:0; display:inline-flex; align-items:center; gap:5px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:10.5px; letter-spacing:.1em; color:#000; background:#fff; padding:8px 13px; border-radius:99px; text-decoration:none; text-transform:uppercase; transition:transform .2s ease;" style-hover="transform:translateY(-2px);">Reservar →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="position:relative; grid-column:span 1; grid-row:span 2; perspective:1600px;" style-hover="filter:brightness(1.06);">
+        <div onClick="{{ onClasico }}" style="position:relative; width:100%; height:100%; cursor:pointer; transform-style:preserve-3d; transition:transform .85s cubic-bezier(.22,1,.36,1); transform:{{ flipClasico }};">
+          <div style="position:absolute; inset:0; backface-visibility:hidden; border-radius:12px; overflow:hidden; background:#141416;">
+            <img src="assets/cortes/clasico.png" alt="Corte clásico" style="width:100%; height:100%; object-fit:cover; object-position:center 30%; display:block;">
+            <span style="position:absolute; left:12px; bottom:10px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:11px; letter-spacing:.18em; color:#fff; text-transform:uppercase; text-shadow:0 1px 6px rgba(0,0,0,.6); pointer-events:none;">Clásico</span>
+            <div style="position:absolute; top:2px; right:2px; width:38px; height:38px; border-radius:50%; border:1px solid rgba(255,255,255,.55); animation:onyxPulse 2.2s ease-in-out infinite; pointer-events:none;"></div>
+            <div style="position:absolute; top:10px; right:10px; width:22px; height:22px; border-radius:50%; background:rgba(0,0,0,.55); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; pointer-events:none;"><span style="font-family:Georgia,serif; font-style:italic; font-weight:700; font-size:12px; color:#fff;">i</span></div>
+          </div>
+          <div style="position:absolute; inset:0; backface-visibility:hidden; transform:rotateY(180deg); border-radius:12px; background:linear-gradient(160deg,#1c1c1e,#0c0c0d); border:1px solid rgba(255,255,255,.14); padding:16px; display:flex; flex-direction:column; justify-content:space-between; gap:8px; overflow:hidden; box-shadow:0 24px 50px rgba(0,0,0,.5);">
+            <div style="position:absolute; inset:0; opacity:.06; background-image:repeating-linear-gradient(45deg,#fff 0 1px,transparent 1px 15px),repeating-linear-gradient(-45deg,#fff 0 1px,transparent 1px 15px); pointer-events:none;"></div>
+            <div style="position:absolute; top:9px; left:10px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:9px; letter-spacing:.08em; color:rgba(255,255,255,.32);">CL</div>
+            <div style="position:absolute; bottom:9px; right:10px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:9px; letter-spacing:.08em; color:rgba(255,255,255,.32); transform:rotate(180deg);">CL</div>
+            <div style="position:relative;">
+              <div style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:12.5px; letter-spacing:.12em; color:#fff; text-transform:uppercase;">Clásico</div>
+              <p style="margin:6px 0 0; font-family:'HN Cn',sans-serif; font-size:11.5px; line-height:1.5; color:rgba(255,255,255,.65);">Tijera y máquina, raya definida y acabado prolijo. Atemporal, para cualquier ocasión.</p>
+            </div>
+            <div style="position:relative; display:flex; flex-direction:column; gap:7px; border-top:1px solid rgba(255,255,255,.12); padding-top:8px;">
+              <div style="display:flex; justify-content:space-between; gap:10px;">
+                <div><div style="font-family:'HN Cn',sans-serif; font-size:8px; letter-spacing:.08em; color:rgba(255,255,255,.4); text-transform:uppercase;">Duración</div><div style="font-family:'HN Cn',sans-serif; font-size:11px; color:#fff; margin-top:1px;">40 min</div></div>
+                <div><div style="font-family:'HN Cn',sans-serif; font-size:8px; letter-spacing:.08em; color:rgba(255,255,255,.4); text-transform:uppercase;">Retoque</div><div style="font-family:'HN Cn',sans-serif; font-size:11px; color:#fff; margin-top:1px;">3–4 sem</div></div>
+              </div>
+              <a href="#reservar" onClick="{{ stopProp }}" style="align-self:flex-start; display:inline-flex; align-items:center; gap:5px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:9.5px; letter-spacing:.06em; color:#000; background:#fff; padding:7px 12px; border-radius:99px; text-decoration:none; text-transform:uppercase; transition:transform .2s ease;" style-hover="transform:translateY(-2px);">Reservar →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="position:relative; grid-column:span 1; grid-row:span 2; perspective:1600px;" style-hover="filter:brightness(1.06);">
+        <div onClick="{{ onNinos }}" style="position:relative; width:100%; height:100%; cursor:pointer; transform-style:preserve-3d; transition:transform .85s cubic-bezier(.22,1,.36,1); transform:{{ flipNinos }};">
+          <div style="position:absolute; inset:0; backface-visibility:hidden; border-radius:12px; overflow:hidden; background:#141416;">
+            <img src="assets/cortes/ninos.png" alt="Corte niños" style="width:100%; height:100%; object-fit:cover; object-position:center 22%; display:block;">
+            <span style="position:absolute; left:12px; bottom:10px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:11px; letter-spacing:.18em; color:#fff; text-transform:uppercase; text-shadow:0 1px 6px rgba(0,0,0,.6); pointer-events:none;">Niños</span>
+            <div style="position:absolute; top:2px; right:2px; width:38px; height:38px; border-radius:50%; border:1px solid rgba(255,255,255,.55); animation:onyxPulse 2.2s ease-in-out infinite; pointer-events:none;"></div>
+            <div style="position:absolute; top:10px; right:10px; width:22px; height:22px; border-radius:50%; background:rgba(0,0,0,.55); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; pointer-events:none;"><span style="font-family:Georgia,serif; font-style:italic; font-weight:700; font-size:12px; color:#fff;">i</span></div>
+          </div>
+          <div style="position:absolute; inset:0; backface-visibility:hidden; transform:rotateY(180deg); border-radius:12px; background:linear-gradient(160deg,#1c1c1e,#0c0c0d); border:1px solid rgba(255,255,255,.14); padding:16px; display:flex; flex-direction:column; justify-content:space-between; gap:8px; overflow:hidden; box-shadow:0 24px 50px rgba(0,0,0,.5);">
+            <div style="position:absolute; inset:0; opacity:.06; background-image:repeating-linear-gradient(45deg,#fff 0 1px,transparent 1px 15px),repeating-linear-gradient(-45deg,#fff 0 1px,transparent 1px 15px); pointer-events:none;"></div>
+            <div style="position:absolute; top:9px; left:10px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:9px; letter-spacing:.08em; color:rgba(255,255,255,.32);">NI</div>
+            <div style="position:absolute; bottom:9px; right:10px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:9px; letter-spacing:.08em; color:rgba(255,255,255,.32); transform:rotate(180deg);">NI</div>
+            <div style="position:relative;">
+              <div style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:12.5px; letter-spacing:.12em; color:#fff; text-transform:uppercase;">Niños</div>
+              <p style="margin:6px 0 0; font-family:'HN Cn',sans-serif; font-size:11.5px; line-height:1.5; color:rgba(255,255,255,.65);">Rápido, cómodo y con mucha paciencia. La primera visita a la barbería, bien hecha.</p>
+            </div>
+            <div style="position:relative; display:flex; flex-direction:column; gap:7px; border-top:1px solid rgba(255,255,255,.12); padding-top:8px;">
+              <div style="display:flex; justify-content:space-between; gap:10px;">
+                <div><div style="font-family:'HN Cn',sans-serif; font-size:8px; letter-spacing:.08em; color:rgba(255,255,255,.4); text-transform:uppercase;">Duración</div><div style="font-family:'HN Cn',sans-serif; font-size:11px; color:#fff; margin-top:1px;">30 min</div></div>
+                <div><div style="font-family:'HN Cn',sans-serif; font-size:8px; letter-spacing:.08em; color:rgba(255,255,255,.4); text-transform:uppercase;">Retoque</div><div style="font-family:'HN Cn',sans-serif; font-size:11px; color:#fff; margin-top:1px;">3 sem</div></div>
+              </div>
+              <a href="#reservar" onClick="{{ stopProp }}" style="align-self:flex-start; display:inline-flex; align-items:center; gap:5px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:9.5px; letter-spacing:.06em; color:#000; background:#fff; padding:7px 12px; border-radius:99px; text-decoration:none; text-transform:uppercase; transition:transform .2s ease;" style-hover="transform:translateY(-2px);">Reservar →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="position:relative; grid-column:span 1; grid-row:span 2; perspective:1600px;" style-hover="filter:brightness(1.06);">
+        <div onClick="{{ onDiseno }}" style="position:relative; width:100%; height:100%; cursor:pointer; transform-style:preserve-3d; transition:transform .85s cubic-bezier(.22,1,.36,1); transform:{{ flipDiseno }};">
+          <div style="position:absolute; inset:0; backface-visibility:hidden; border-radius:12px; overflow:hidden; background:#141416;">
+            <img src="assets/cortes/texturizado.png" alt="Diseño en el corte" style="width:100%; height:100%; object-fit:cover; object-position:center 34%; display:block;">
+            <span style="position:absolute; left:12px; bottom:10px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:11px; letter-spacing:.18em; color:#fff; text-transform:uppercase; text-shadow:0 1px 6px rgba(0,0,0,.6); pointer-events:none;">Diseño</span>
+            <div style="position:absolute; top:2px; right:2px; width:38px; height:38px; border-radius:50%; border:1px solid rgba(255,255,255,.55); animation:onyxPulse 2.2s ease-in-out infinite; pointer-events:none;"></div>
+            <div style="position:absolute; top:10px; right:10px; width:22px; height:22px; border-radius:50%; background:rgba(0,0,0,.55); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; pointer-events:none;"><span style="font-family:Georgia,serif; font-style:italic; font-weight:700; font-size:12px; color:#fff;">i</span></div>
+          </div>
+          <div style="position:absolute; inset:0; backface-visibility:hidden; transform:rotateY(180deg); border-radius:12px; background:linear-gradient(160deg,#1c1c1e,#0c0c0d); border:1px solid rgba(255,255,255,.14); padding:16px; display:flex; flex-direction:column; justify-content:space-between; gap:8px; overflow:hidden; box-shadow:0 24px 50px rgba(0,0,0,.5);">
+            <div style="position:absolute; inset:0; opacity:.06; background-image:repeating-linear-gradient(45deg,#fff 0 1px,transparent 1px 15px),repeating-linear-gradient(-45deg,#fff 0 1px,transparent 1px 15px); pointer-events:none;"></div>
+            <div style="position:absolute; top:9px; left:10px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:9px; letter-spacing:.08em; color:rgba(255,255,255,.32);">DS</div>
+            <div style="position:absolute; bottom:9px; right:10px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:9px; letter-spacing:.08em; color:rgba(255,255,255,.32); transform:rotate(180deg);">DS</div>
+            <div style="position:relative;">
+              <div style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:12.5px; letter-spacing:.12em; color:#fff; text-transform:uppercase;">Diseño</div>
+              <p style="margin:6px 0 0; font-family:'HN Cn',sans-serif; font-size:11.5px; line-height:1.5; color:rgba(255,255,255,.65);">Líneas y patrones afeitados a navaja sobre el corte base. Un plus de personalidad.</p>
+            </div>
+            <div style="position:relative; display:flex; flex-direction:column; gap:7px; border-top:1px solid rgba(255,255,255,.12); padding-top:8px;">
+              <div style="display:flex; justify-content:space-between; gap:10px;">
+                <div><div style="font-family:'HN Cn',sans-serif; font-size:8px; letter-spacing:.08em; color:rgba(255,255,255,.4); text-transform:uppercase;">Duración</div><div style="font-family:'HN Cn',sans-serif; font-size:11px; color:#fff; margin-top:1px;">+15 min</div></div>
+                <div><div style="font-family:'HN Cn',sans-serif; font-size:8px; letter-spacing:.08em; color:rgba(255,255,255,.4); text-transform:uppercase;">Retoque</div><div style="font-family:'HN Cn',sans-serif; font-size:11px; color:#fff; margin-top:1px;">c/corte</div></div>
+              </div>
+              <a href="#reservar" onClick="{{ stopProp }}" style="align-self:flex-start; display:inline-flex; align-items:center; gap:5px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:9.5px; letter-spacing:.06em; color:#000; background:#fff; padding:7px 12px; border-radius:99px; text-decoration:none; text-transform:uppercase; transition:transform .2s ease;" style-hover="transform:translateY(-2px);">Reservar →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="position:relative; grid-column:span 1; grid-row:span 2; perspective:1600px;" style-hover="filter:brightness(1.06);">
+        <div onClick="{{ onBarba }}" style="position:relative; width:100%; height:100%; cursor:pointer; transform-style:preserve-3d; transition:transform .85s cubic-bezier(.22,1,.36,1); transform:{{ flipBarba }};">
+          <div style="position:absolute; inset:0; backface-visibility:hidden; border-radius:12px; overflow:hidden;">
+            <img src="assets/cortes/barba.jpg" alt="Barba" style="width:100%; height:100%; object-fit:cover; object-position:center 35%; display:block;">
+            <span style="position:absolute; left:12px; bottom:10px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:11px; letter-spacing:.18em; color:#fff; text-transform:uppercase; text-shadow:0 1px 6px rgba(0,0,0,.6); pointer-events:none;">Barba</span>
+            <div style="position:absolute; top:2px; right:2px; width:38px; height:38px; border-radius:50%; border:1px solid rgba(255,255,255,.55); animation:onyxPulse 2.2s ease-in-out infinite; pointer-events:none;"></div>
+            <div style="position:absolute; top:10px; right:10px; width:22px; height:22px; border-radius:50%; background:rgba(0,0,0,.55); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; pointer-events:none;"><span style="font-family:Georgia,serif; font-style:italic; font-weight:700; font-size:12px; color:#fff;">i</span></div>
+          </div>
+          <div style="position:absolute; inset:0; backface-visibility:hidden; transform:rotateY(180deg); border-radius:12px; background:linear-gradient(160deg,#1c1c1e,#0c0c0d); border:1px solid rgba(255,255,255,.14); padding:16px; display:flex; flex-direction:column; justify-content:space-between; gap:8px; overflow:hidden; box-shadow:0 24px 50px rgba(0,0,0,.5);">
+            <div style="position:absolute; inset:0; opacity:.06; background-image:repeating-linear-gradient(45deg,#fff 0 1px,transparent 1px 15px),repeating-linear-gradient(-45deg,#fff 0 1px,transparent 1px 15px); pointer-events:none;"></div>
+            <div style="position:absolute; top:9px; left:10px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:9px; letter-spacing:.08em; color:rgba(255,255,255,.32);">BA</div>
+            <div style="position:absolute; bottom:9px; right:10px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:9px; letter-spacing:.08em; color:rgba(255,255,255,.32); transform:rotate(180deg);">BA</div>
+            <div style="position:relative;">
+              <div style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:12.5px; letter-spacing:.12em; color:#fff; text-transform:uppercase;">Barba</div>
+              <p style="margin:6px 0 0; font-family:'HN Cn',sans-serif; font-size:11.5px; line-height:1.5; color:rgba(255,255,255,.65);">Perfilado a navaja con toalla caliente. Contorno preciso y acabado prolijo.</p>
+            </div>
+            <div style="position:relative; display:flex; flex-direction:column; gap:7px; border-top:1px solid rgba(255,255,255,.12); padding-top:8px;">
+              <div style="display:flex; justify-content:space-between; gap:10px;">
+                <div><div style="font-family:'HN Cn',sans-serif; font-size:8px; letter-spacing:.08em; color:rgba(255,255,255,.4); text-transform:uppercase;">Duración</div><div style="font-family:'HN Cn',sans-serif; font-size:11px; color:#fff; margin-top:1px;">25–30 min</div></div>
+                <div><div style="font-family:'HN Cn',sans-serif; font-size:8px; letter-spacing:.08em; color:rgba(255,255,255,.4); text-transform:uppercase;">Retoque</div><div style="font-family:'HN Cn',sans-serif; font-size:11px; color:#fff; margin-top:1px;">2 sem</div></div>
+              </div>
+              <a href="#reservar" onClick="{{ stopProp }}" style="align-self:flex-start; display:inline-flex; align-items:center; gap:5px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:9.5px; letter-spacing:.06em; color:#000; background:#fff; padding:7px 12px; border-radius:99px; text-decoration:none; text-transform:uppercase; transition:transform .2s ease;" style-hover="transform:translateY(-2px);">Reservar →</a>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="position:relative; grid-column:span 2; grid-row:span 2; perspective:1600px;" style-hover="filter:brightness(1.06);">
+        <div onClick="{{ onTextur }}" style="position:relative; width:100%; height:100%; cursor:pointer; transform-style:preserve-3d; transition:transform .85s cubic-bezier(.22,1,.36,1); transform:{{ flipTextur }};">
+          <div style="position:absolute; inset:0; backface-visibility:hidden; border-radius:12px; overflow:hidden;">
+            <image-slot id="ox-g6" shape="rect" placeholder="Arrastrá una foto" style="width:100%; height:100%; display:block; background:#141416;"></image-slot>
+            <span style="position:absolute; left:14px; bottom:12px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:12px; letter-spacing:.18em; color:#fff; text-transform:uppercase; text-shadow:0 1px 6px rgba(0,0,0,.6); pointer-events:none;">Texturizado</span>
+            <div style="position:absolute; top:12px; right:12px; width:26px; height:26px; border-radius:50%; background:rgba(0,0,0,.5); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; pointer-events:none;"><span style="font-family:Georgia,serif; font-style:italic; font-weight:700; font-size:14px; color:#fff;">i</span></div>
+          </div>
+          <div style="position:absolute; inset:0; backface-visibility:hidden; transform:rotateY(180deg); border-radius:12px; background:linear-gradient(160deg,#1c1c1e,#0c0c0d); border:1px solid rgba(255,255,255,.14); padding:20px; display:flex; flex-direction:column; justify-content:center; gap:9px;">
+            <div style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:14px; letter-spacing:.14em; color:#fff; text-transform:uppercase;">Texturizado</div>
+            <p style="margin:0; max-width:320px; font-family:'HN Cn',sans-serif; font-size:13px; line-height:1.55; color:rgba(255,255,255,.65);">Textura y movimiento arriba con tijera, base corta en los lados. Natural, con cuerpo y fácil de peinar.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="servicios" style="scroll-margin-top:70px; padding:clamp(70px,10vw,120px) clamp(20px,5vw,64px); border-top:1px solid rgba(255,255,255,.08);">
+    <div style="max-width:1240px; margin:0 auto;">
+      <div data-title-block data-dir="right" style="text-align:right; margin-bottom:48px;">
+        <div style="font-family:'HN Cn',sans-serif; font-size:12px; letter-spacing:.4em; color:rgba(255,255,255,.5); text-transform:uppercase;">Precios</div>
+        <h2 style="margin:18px 0 0; font-family:'Brown Sugar',serif; font-weight:400; font-size:clamp(46px,7.6vw,76px); line-height:.95; color:#fff;">Servicios y tarifas</h2>
+      </div>
+      <div data-reveal style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:20px; max-width:900px; margin:0 auto;">
+        <div style="border:1px solid rgba(255,255,255,.14); border-radius:16px; padding:32px; display:flex; flex-direction:column; gap:14px; background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);">
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;"><div><div style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:19px; letter-spacing:.06em; color:#fff; text-transform:uppercase; line-height:1.15;">Corte de pelo</div><div style="font-family:'HN Cn',sans-serif; font-size:12.5px; color:rgba(255,255,255,.45); margin-top:4px;">60 min</div></div><span style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:30px; letter-spacing:.01em; color:#fff; white-space:nowrap;">₡6.000</span></div>
+          <p style="margin:0; font-family:'HN Cn',sans-serif; font-size:14.5px; line-height:1.6; color:rgba(255,255,255,.6);">A máquina y tijera, perfilado y acabado limpio. Para jóvenes y adultos.</p>
+          <a href="#reservar" style="margin-top:auto; font-family:'HN Cn',sans-serif; font-weight:700; font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:#000; background:#fff; padding:13px 0; border-radius:99px; text-decoration:none; text-align:center; transition:transform .25s ease, box-shadow .25s ease;" style-hover="transform:translateY(-2px); box-shadow:0 8px 20px rgba(255,255,255,.22);">Reservar</a>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,.14); border-radius:16px; padding:32px; display:flex; flex-direction:column; gap:14px; background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);">
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;"><div><div style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:19px; letter-spacing:.06em; color:#fff; text-transform:uppercase; line-height:1.15;">Recorte de barba</div><div style="font-family:'HN Cn',sans-serif; font-size:12.5px; color:rgba(255,255,255,.45); margin-top:4px;">30 min</div></div><span style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:30px; letter-spacing:.01em; color:#fff; white-space:nowrap;">₡4.000</span></div>
+          <p style="margin:0; font-family:'HN Cn',sans-serif; font-size:14.5px; line-height:1.6; color:rgba(255,255,255,.6);">Perfilado a navaja con toalla caliente. Contorno preciso y prolijo.</p>
+          <a href="#reservar" style="margin-top:auto; font-family:'HN Cn',sans-serif; font-weight:700; font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:#000; background:#fff; padding:13px 0; border-radius:99px; text-decoration:none; text-align:center; transition:transform .25s ease, box-shadow .25s ease;" style-hover="transform:translateY(-2px); box-shadow:0 8px 20px rgba(255,255,255,.22);">Reservar</a>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,.14); border-radius:16px; padding:32px; display:flex; flex-direction:column; gap:14px; background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);">
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;"><div><div style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:19px; letter-spacing:.06em; color:#fff; text-transform:uppercase; line-height:1.15;">Corte infantil</div><div style="font-family:'HN Cn',sans-serif; font-size:12.5px; color:rgba(255,255,255,.45); margin-top:4px;">60 min</div></div><span style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:30px; letter-spacing:.01em; color:#fff; white-space:nowrap;">₡6.000</span></div>
+          <p style="margin:0; font-family:'HN Cn',sans-serif; font-size:14.5px; line-height:1.6; color:rgba(255,255,255,.6);">Rápido, cómodo y con paciencia. La primera visita a la barbería, bien hecha.</p>
+          <a href="#reservar" style="margin-top:auto; font-family:'HN Cn',sans-serif; font-weight:700; font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:#000; background:#fff; padding:13px 0; border-radius:99px; text-decoration:none; text-align:center; transition:transform .25s ease, box-shadow .25s ease;" style-hover="transform:translateY(-2px); box-shadow:0 8px 20px rgba(255,255,255,.22);">Reservar</a>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,.14); border-radius:16px; padding:32px; display:flex; flex-direction:column; gap:14px; background:linear-gradient(180deg,rgba(255,255,255,.05),transparent);">
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px;"><div><div style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:19px; letter-spacing:.06em; color:#fff; text-transform:uppercase; line-height:1.15;">Corte y barba</div><div style="font-family:'HN Cn',sans-serif; font-size:12.5px; color:rgba(255,255,255,.45); margin-top:4px;">90 min · combo</div></div><span style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:30px; letter-spacing:.01em; color:#fff; white-space:nowrap;">₡8.000</span></div>
+          <p style="margin:0; font-family:'HN Cn',sans-serif; font-size:14.5px; line-height:1.6; color:rgba(255,255,255,.6);">El corte completo más perfilado y arreglo de barba con navaja y toalla caliente.</p>
+          <a href="#reservar" style="margin-top:auto; font-family:'HN Cn',sans-serif; font-weight:700; font-size:13px; letter-spacing:.16em; text-transform:uppercase; color:#000; background:#fff; padding:13px 0; border-radius:99px; text-decoration:none; text-align:center; transition:transform .25s ease, box-shadow .25s ease;" style-hover="transform:translateY(-2px); box-shadow:0 8px 20px rgba(255,255,255,.22);">Reservar</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="fidelidad" style="scroll-margin-top:70px; padding:clamp(70px,10vw,120px) clamp(20px,5vw,64px); border-top:1px solid rgba(255,255,255,.08);">
+    <div style="max-width:1100px; margin:0 auto; display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:clamp(30px,5vw,60px); align-items:center;">
+      <div data-title-block data-dir="left">
+        <div style="font-family:'HN Cn',sans-serif; font-size:12px; letter-spacing:.4em; color:rgba(255,255,255,.5); text-transform:uppercase;">Cliente frecuente</div>
+        <h2 style="margin:18px 0 18px; font-family:'Brown Sugar',serif; font-weight:400; font-size:clamp(44px,6.6vw,70px); line-height:.95; color:#fff;">Club ONYX</h2>
+        <p style="margin:0; font-family:'HN Cn',sans-serif; font-size:16px; line-height:1.7; color:rgba(255,255,255,.68); max-width:400px;">Cada visita suma un sello. En el camino también caen regalías —cera para cabello, aceite para barba— y al llegar a diez, tu corte va con 50% de descuento.</p>
+      </div>
+      <div data-title-block data-dir="right" style="background:linear-gradient(160deg,#161618,#0c0c0d); border:1px solid rgba(255,255,255,.14); border-radius:20px; padding:30px; box-shadow:0 30px 60px rgba(0,0,0,.5);">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:24px;">
+          <div><div style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:14px; letter-spacing:.2em; color:#fff; text-transform:uppercase;">Tarjeta de fidelidad</div><div style="font-family:'HN Cn',sans-serif; font-size:12px; letter-spacing:.1em; color:rgba(255,255,255,.5); margin-top:2px;">ONYX Barber Studio</div></div>
+          <img src="assets/onyx-iso-official-white.png" alt="" style="height:38px;">
+        </div>
+        <div style="display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:12px;">
+          <div style="aspect-ratio:1/1; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center;"><img src="assets/onyx-iso-official-black.png" alt="" style="height:56%;"></div>
+          <div style="aspect-ratio:1/1; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center;"><img src="assets/onyx-iso-official-black.png" alt="" style="height:56%;"></div>
+          <div style="aspect-ratio:1/1; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center;"><img src="assets/onyx-iso-official-black.png" alt="" style="height:56%;"></div>
+          <div style="aspect-ratio:1/1; border-radius:50%; border:1px dashed rgba(255,255,255,.3); display:flex; align-items:center; justify-content:center; font-family:'HN Cn',sans-serif; font-size:14px; color:rgba(255,255,255,.35);">4</div>
+          <div style="aspect-ratio:1/1; border-radius:50%; border:1px dashed rgba(255,255,255,.3); display:flex; align-items:center; justify-content:center; font-family:'HN Cn',sans-serif; font-size:9px; letter-spacing:.02em; color:rgba(255,255,255,.4); text-transform:uppercase; text-align:center;">Cera</div>
+          <div style="aspect-ratio:1/1; border-radius:50%; border:1px dashed rgba(255,255,255,.3); display:flex; align-items:center; justify-content:center; font-family:'HN Cn',sans-serif; font-size:14px; color:rgba(255,255,255,.35);">6</div>
+          <div style="aspect-ratio:1/1; border-radius:50%; border:1px dashed rgba(255,255,255,.3); display:flex; align-items:center; justify-content:center; font-family:'HN Cn',sans-serif; font-size:14px; color:rgba(255,255,255,.35);">7</div>
+          <div style="aspect-ratio:1/1; border-radius:50%; border:1px dashed rgba(255,255,255,.3); display:flex; align-items:center; justify-content:center; font-family:'HN Cn',sans-serif; font-size:8.5px; letter-spacing:.02em; color:rgba(255,255,255,.4); text-transform:uppercase; text-align:center;">Aceite</div>
+          <div style="aspect-ratio:1/1; border-radius:50%; border:1px dashed rgba(255,255,255,.3); display:flex; align-items:center; justify-content:center; font-family:'HN Cn',sans-serif; font-size:14px; color:rgba(255,255,255,.35);">9</div>
+          <div style="aspect-ratio:1/1; border-radius:50%; border:1.5px solid #fff; display:flex; align-items:center; justify-content:center; font-family:'HN Cn',sans-serif; font-weight:700; font-size:10px; letter-spacing:.06em; color:#fff; text-transform:uppercase; text-align:center; line-height:1;">50%</div>
+        </div>
+        <div style="margin-top:22px; padding-top:18px; border-top:1px solid rgba(255,255,255,.12);">
+          <div style="font-family:'Brown Sugar',serif; font-size:20px; color:#fff;">El 10º corte, con 50% off</div>
+          <div style="font-family:'HN Cn',sans-serif; font-size:12px; color:rgba(255,255,255,.45); margin-top:4px;">+ cera y aceite de regalo en el camino</div>
+        </div>
+        <a href="https://onelink.to/winstamp" target="_blank" style="margin-top:18px; display:flex; align-items:center; justify-content:center; gap:8px; background:#fff; color:#000; padding:15px; border-radius:99px; text-decoration:none; transition:transform .25s ease;" style-hover="transform:translateY(-2px);">
+          <img src="assets/onyx-iso-official-black.png" alt="" style="height:18px; width:auto; flex-shrink:0;">
+          <span style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:12px; letter-spacing:.06em; text-transform:uppercase; text-align:center;">Descarga nuestra tarjeta de fidelidad</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section id="ubicacion" style="scroll-margin-top:70px; padding:clamp(70px,10vw,120px) clamp(20px,5vw,64px); border-top:1px solid rgba(255,255,255,.08);">
+    <div style="max-width:1240px; margin:0 auto;">
+      <div data-title-block data-dir="right" style="text-align:right; margin-bottom:48px;">
+        <div style="font-family:'HN Cn',sans-serif; font-size:12px; letter-spacing:.4em; color:rgba(255,255,255,.5); text-transform:uppercase;">Dónde estamos</div>
+        <h2 style="margin:18px 0 0; font-family:'Brown Sugar',serif; font-weight:400; font-size:clamp(46px,7.6vw,76px); line-height:.95; color:#fff;">Ubicación y horario</h2>
+      </div>
+      <div data-reveal style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:24px; align-items:stretch;">
+        <div style="display:flex; flex-direction:column; gap:28px;">
+          <div>
+            <div style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:12px; letter-spacing:.2em; color:rgba(255,255,255,.55); text-transform:uppercase; margin-bottom:10px;">Dirección</div>
+            <p style="margin:0; font-family:'HN Cn',sans-serif; font-size:18px; line-height:1.65; color:#fff;">Ciudad Quesada, Barrio Los Ángeles.<br><span style="color:rgba(255,255,255,.66); font-size:16px;">200 metros este y 100 metros norte de la Iglesia Católica.</span></p>
+            <a href="https://maps.app.goo.gl/itaHkX8MWGByTHVr5?g_st=iw" target="_blank" style="display:inline-block; margin-top:16px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:12.5px; letter-spacing:.16em; text-transform:uppercase; color:#fff; border:1px solid rgba(255,255,255,.32); padding:12px 22px; border-radius:99px; text-decoration:none; transition:border-color .25s ease, background .25s ease;" style-hover="border-color:#fff; background:rgba(255,255,255,.08);">Cómo llegar</a>
+          </div>
+          <div style="border-top:1px solid rgba(255,255,255,.12); padding-top:26px;">
+            <div style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:12px; letter-spacing:.2em; color:rgba(255,255,255,.55); text-transform:uppercase; margin-bottom:14px;">Horario</div>
+            <div style="display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.08);"><span style="font-family:'HN Cn',sans-serif; font-size:15px; color:#fff;">Lunes a Viernes</span><span style="font-family:'HN Cn',sans-serif; font-size:15px; color:rgba(255,255,255,.66);">9:00 – 19:00</span></div>
+            <div style="display:flex; justify-content:space-between; padding:9px 0; border-bottom:1px solid rgba(255,255,255,.08);"><span style="font-family:'HN Cn',sans-serif; font-size:15px; color:#fff;">Sábado</span><span style="font-family:'HN Cn',sans-serif; font-size:15px; color:rgba(255,255,255,.66);">8:00 – 18:00</span></div>
+            <div style="display:flex; justify-content:space-between; padding:9px 0;"><span style="font-family:'HN Cn',sans-serif; font-size:15px; color:#fff;">Domingo</span><span style="font-family:'HN Cn',sans-serif; font-size:15px; color:rgba(255,255,255,.5);">Cerrado</span></div>
+          </div>
+        </div>
+        <div style="position:relative; min-height:340px; border-radius:16px; overflow:hidden; border:1px solid rgba(255,255,255,.14);">
+          <iframe src="https://maps.google.com/maps?q=Ciudad%20Quesada%20Los%20Angeles%20Costa%20Rica&z=15&output=embed" style="width:100%; height:100%; min-height:340px; border:0; display:block; filter:grayscale(1) invert(0.9) contrast(0.85); pointer-events:none;" loading="lazy" referrerpolicy="no-referrer-when-downgrade" title="Mapa ONYX Barber Studio"></iframe>
+          <a href="https://maps.app.goo.gl/itaHkX8MWGByTHVr5?g_st=iw" target="_blank" aria-label="Ver ubicación en Google Maps" style="position:absolute; inset:0; cursor:pointer;"></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="reservar" style="scroll-margin-top:70px; padding:clamp(70px,10vw,120px) clamp(20px,5vw,64px); border-top:1px solid rgba(255,255,255,.08);">
+    <div style="max-width:660px; margin:0 auto;">
+      <div data-title-block data-dir="left" style="text-align:left;">
+        <div style="font-family:'HN Cn',sans-serif; font-size:12px; letter-spacing:.4em; color:rgba(255,255,255,.5); text-transform:uppercase;">Agendá tu cita</div>
+        <h2 style="margin:18px 0 12px; font-family:'Brown Sugar',serif; font-weight:400; font-size:clamp(46px,7.6vw,76px); line-height:.95; color:#fff;">Reservá tu cita</h2>
+        <p style="margin:0 0 30px; max-width:460px; font-family:'HN Cn',sans-serif; font-size:15px; line-height:1.6; color:rgba(255,255,255,.6);">Elegí el día, la hora libre y dejanos tus datos. Tu cita queda apartada al instante.</p>
+      </div>
+      <div data-reveal id="ox-booking" style="min-height:360px;"></div>
+      <div style="margin-top:28px; display:flex; flex-direction:column; align-items:center; gap:12px;">
+        <span style="font-family:'HN Cn',sans-serif; font-size:13.5px; color:rgba(255,255,255,.5);">¿Preferís hablar?</span>
+        <a href="https://wa.me/50670861607?text=Hola%20ONYX%2C%20quiero%20reservar%20un%20corte." target="_blank" style="display:inline-flex; align-items:center; gap:10px; border:1px solid rgba(255,255,255,.28); color:#fff; text-decoration:none; padding:12px 22px; border-radius:99px; font-family:'HN Cn',sans-serif; font-weight:700; font-size:13.5px; letter-spacing:.1em; transition:background .3s ease, color .3s ease, border-color .3s ease, transform .3s ease;" style-hover="background:#fff; color:#000; border-color:#fff; transform:translateY(-2px);">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a10 10 0 0 0-8.6 15l-1.4 5 5.1-1.3A10 10 0 1 0 12 2zm5.8 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.1.1-1.8-.1-.4-.1-.9-.3-1.6-.6-2.8-1.2-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 .9-2.2c.2-.2.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.1.1.3 0 .5l-.4.5-.3.3c-.1.1-.3.3-.1.5.1.3.6 1.1 1.4 1.7 1 .8 1.7 1.1 2 1.2.2.1.4.1.5-.1l.7-.8c.2-.2.4-.2.6-.1l1.9.9c.2.1.4.2.5.3.1.2.1.6-.1 1.1z"/></svg>
+          +506 7086 1607
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <section id="redes" style="scroll-margin-top:70px; padding:clamp(60px,9vw,110px) clamp(20px,5vw,64px); border-top:1px solid rgba(255,255,255,.08);">
+    <div style="max-width:900px; margin:0 auto;">
+      <div data-title-block data-dir="right" style="text-align:right; margin-bottom:40px;">
+        <div style="font-family:'HN Cn',sans-serif; font-size:12px; letter-spacing:.4em; color:rgba(255,255,255,.5); text-transform:uppercase;">Seguinos</div>
+        <h2 style="margin:18px 0 0; font-family:'Brown Sugar',serif; font-weight:400; font-size:clamp(44px,6.6vw,70px); line-height:.95; color:#fff;">Seguí a ONYX</h2>
+      </div>
+      <div data-reveal style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:20px;">
+        <a href="https://instagram.com/onyxbarber.studio" target="_blank" style="text-decoration:none; border:1px solid rgba(255,255,255,.14); border-radius:16px; padding:30px; display:flex; align-items:center; gap:18px; background:linear-gradient(180deg,rgba(255,255,255,.03),transparent); transition:transform .25s ease, border-color .25s ease;" style-hover="transform:translateY(-4px); border-color:rgba(255,255,255,.32);">
+          <div style="width:52px; height:52px; border-radius:14px; background:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.1" fill="#000" stroke="none"/></svg></div>
+          <div style="text-align:left;"><div style="font-family:'HN Cn',sans-serif; font-size:11px; letter-spacing:.2em; color:rgba(255,255,255,.5); text-transform:uppercase;">La marca</div><div style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:19px; color:#fff; margin-top:3px;">@onyxbarber.studio</div></div>
+        </a>
+        <a href="https://instagram.com/daniel_barber.cr" target="_blank" style="text-decoration:none; border:1px solid rgba(255,255,255,.14); border-radius:16px; padding:30px; display:flex; align-items:center; gap:18px; background:linear-gradient(180deg,rgba(255,255,255,.03),transparent); transition:transform .25s ease, border-color .25s ease;" style-hover="transform:translateY(-4px); border-color:rgba(255,255,255,.32);">
+          <div style="width:52px; height:52px; border-radius:14px; background:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0;"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1.1" fill="#000" stroke="none"/></svg></div>
+          <div style="text-align:left;"><div style="font-family:'HN Cn',sans-serif; font-size:11px; letter-spacing:.2em; color:rgba(255,255,255,.5); text-transform:uppercase;">El barbero</div><div style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:19px; color:#fff; margin-top:3px;">@daniel_barber.cr</div></div>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <footer style="border-top:1px solid rgba(255,255,255,.1); padding:clamp(50px,7vw,80px) clamp(20px,5vw,64px) 40px; text-align:center;">
+    <img data-reveal src="assets/onyx-full-white.png" alt="ONYX Barber Studio" style="width:min(70vw,200px); height:auto; margin:0 auto;">
+    <div style="font-family:'Brown Sugar',serif; font-size:22px; color:#fff; margin-top:26px;">Estilo tallado al detalle</div>
+    <p style="margin:20px auto 0; max-width:360px; font-family:'HN Cn',sans-serif; font-size:14px; line-height:1.6; color:rgba(255,255,255,.55);">Ciudad Quesada, Barrio Los Ángeles. 200 m este y 100 m norte de la Iglesia Católica.</p>
+    <div style="display:flex; gap:26px; justify-content:center; margin-top:24px;">
+      <a href="https://instagram.com/onyxbarber.studio" target="_blank" style="font-family:'HN Cn',sans-serif; font-size:13px; letter-spacing:.14em; color:rgba(255,255,255,.7); text-decoration:none; transition:color .25s ease;" style-hover="color:#fff;">@onyxbarber.studio</a>
+      <a href="https://wa.me/50670861607?text=Hola%20ONYX%2C%20quiero%20reservar%20un%20corte." target="_blank" style="font-family:'HN Cn',sans-serif; font-size:13px; letter-spacing:.14em; color:rgba(255,255,255,.7); text-decoration:none; transition:color .25s ease;" style-hover="color:#fff;">+506 7086 1607</a>
+    </div>
+    <div style="margin-top:34px; padding-top:24px; border-top:1px solid rgba(255,255,255,.08); display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; justify-content:center; font-family:'HN Cn',sans-serif; font-size:11px; letter-spacing:.24em; color:rgba(255,255,255,.35); text-transform:uppercase;">
+      <span>© 2026 ONYX Barber Studio</span>
+      <span style="opacity:.4;">·</span>
+      <button id="ox-admin-open" type="button" style="background:none; border:none; cursor:pointer; font-family:'HN Cn',sans-serif; font-size:11px; letter-spacing:.24em; color:rgba(255,255,255,.4); text-transform:uppercase; padding:0;">Panel del barbero</button>
+    </div>
+  </footer>
+
+  <a href="https://wa.me/50670861607?text=Hola%20ONYX%2C%20quiero%20reservar%20un%20corte." target="_blank" aria-label="WhatsApp" style="position:fixed; right:22px; bottom:22px; z-index:60; width:58px; height:58px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 10px 30px rgba(0,0,0,.5); text-decoration:none; transition:transform .3s cubic-bezier(.34,1.56,.64,1), box-shadow .3s ease;" style-hover="transform:scale(1.1); box-shadow:0 14px 38px rgba(0,0,0,.65);">
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="#000"><path d="M12 2a10 10 0 0 0-8.6 15l-1.4 5 5.1-1.3A10 10 0 1 0 12 2zm5.8 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.1.1-1.8-.1-.4-.1-.9-.3-1.6-.6-2.8-1.2-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 .9-2.2c.2-.2.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.1.1.3 0 .5l-.4.5-.3.3c-.1.1-.3.3-.1.5.1.3.6 1.1 1.4 1.7 1 .8 1.7 1.1 2 1.2.2.1.4.1.5-.1l.7-.8c.2-.2.4-.2.6-.1l1.9.9c.2.1.4.2.5.3.1.2.1.6-.1 1.1z"/></svg>
+  </a>
+
+  <div id="ox-admin" style="display:none; position:fixed; inset:0; z-index:80; background:rgba(0,0,0,.78); backdrop-filter:blur(6px); overflow-y:auto; padding:clamp(16px,4vw,48px) clamp(12px,4vw,48px);"></div>
+
+  </div><!-- /contenido z-index:1 -->
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = { flip: {} };
+  componentDidMount() {
+    // ---- Menú móvil (hamburguesa) ---- corre siempre, antes de cualquier salida temprana.
+    this.initMobileNav();
+
+    // ---- Accesibilidad: respetar "movimiento reducido" del sistema ----
+    // Si el usuario pidió menos animación, mostramos todo estático y saltamos los reveals.
+    const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) {
+      // Sin animación: contenido estático y sin Vanta (queda el negro sólido de fondo).
+      document.querySelectorAll('[data-reveal],[data-title-block]').forEach((el) => {
+        el.style.opacity = '1'; el.style.transform = 'none'; el.style.filter = 'none';
+      });
+      this.initBooking();
+      return;
+    }
+    this.initVanta();
+    // ---- Reveal de bloques al entrar en pantalla ----
+    const reveals = Array.from(document.querySelectorAll('[data-reveal]'));
+    reveals.forEach((el) => {
+      el.style.opacity = '0';
+      el.style.transform = 'translateY(30px)';
+      el.style.filter = 'blur(8px)';
+      el.style.transition = 'opacity .9s cubic-bezier(.16,.84,.3,1), transform .9s cubic-bezier(.16,.84,.3,1), filter .9s cubic-bezier(.16,.84,.3,1)';
+      el.style.willChange = 'opacity, transform, filter';
+    });
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting) {
+            const el = e.target;
+            const d = parseInt(el.getAttribute('data-reveal-i') || '0', 10);
+            el.style.transitionDelay = (d * 90) + 'ms';
+            el.style.opacity = '1';
+            el.style.transform = 'none';
+            el.style.filter = 'blur(0px)';
+            io.unobserve(el);
+          }
+        });
+      }, { threshold: 0.12, rootMargin: '0px 0px -7% 0px' });
+      reveals.forEach((el) => io.observe(el));
+    } else {
+      reveals.forEach((el) => { el.style.opacity = '1'; el.style.transform = 'none'; el.style.filter = 'none'; });
+    }
+
+    const titleBlocks = Array.from(document.querySelectorAll('[data-title-block]'));
+    const easeReveal = 'cubic-bezier(.16,.84,.3,1)';
+    titleBlocks.forEach((el) => {
+      const dist = el.getAttribute('data-dir') === 'right' ? 64 : -64;
+      el.dataset.dist = dist;
+      el.style.transition = 'opacity 1s ' + easeReveal + ', transform 1s ' + easeReveal + ', filter 1s ' + easeReveal;
+      el.style.willChange = 'opacity, transform, filter';
+      el.style.opacity = '0';
+      el.style.filter = 'blur(14px)';
+      el.style.transform = 'translateX(' + dist + 'px)';
+    });
+    if ('IntersectionObserver' in window) {
+      const ioTitles = new IntersectionObserver((entries) => {
+        entries.forEach((e) => {
+          const el = e.target, dist = el.dataset.dist;
+          if (e.isIntersecting) { el.style.opacity = '1'; el.style.transform = 'translateX(0)'; el.style.filter = 'blur(0px)'; }
+          else { el.style.opacity = '0'; el.style.transform = 'translateX(' + dist + 'px)'; el.style.filter = 'blur(14px)'; }
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -8% 0px' });
+      titleBlocks.forEach((el) => ioTitles.observe(el));
+    } else {
+      titleBlocks.forEach((el) => { el.style.opacity = '1'; el.style.transform = 'none'; el.style.filter = 'none'; });
+    }
+
+    this.initBooking();
+  }
+
+  // ============ MENÚ MÓVIL ============
+  initMobileNav() {
+    const burger = document.getElementById('nav-burger');
+    const links = document.getElementById('nav-links');
+    if (!burger || !links) return;
+    const setOpen = (open) => {
+      links.classList.toggle('open', open);
+      burger.setAttribute('aria-expanded', open ? 'true' : 'false');
+      burger.setAttribute('aria-label', open ? 'Cerrar menú' : 'Abrir menú');
+    };
+    burger.addEventListener('click', () => setOpen(!links.classList.contains('open')));
+    // Al tocar un enlace, cerrar el menú (el ancla hace el scroll suave).
+    links.querySelectorAll('a').forEach((a) => a.addEventListener('click', () => setOpen(false)));
+    // Cerrar si se vuelve a escritorio.
+    if (window.matchMedia) {
+      const mq = window.matchMedia('(min-width: 761px)');
+      const onChange = (e) => { if (e.matches) setOpen(false); };
+      if (mq.addEventListener) mq.addEventListener('change', onChange);
+      else if (mq.addListener) mq.addListener(onChange);
+    }
+  }
+
+  // ============ FONDO ANIMADO (Vanta WAVES) ============
+  // three.js y vanta.waves cargan async desde el <helmet>; el componente puede montar
+  // antes de que existan window.THREE / window.VANTA, así que reintentamos hasta 10s.
+  initVanta(tries) {
+    tries = tries || 0;
+    if (this.vantaEffect) return;
+    const el = document.getElementById('ox-vanta');
+    if (window.VANTA && window.VANTA.WAVES && window.THREE && el) {
+      this.vantaEffect = window.VANTA.WAVES({
+        el: el,
+        THREE: window.THREE,
+        mouseControls: true,
+        touchControls: true,
+        gyroControls: false,
+        minHeight: 200,
+        minWidth: 200,
+        scale: 1,
+        scaleMobile: 1,
+        color: 0x0c0c0c,
+        shininess: 12,
+        waveHeight: 10,
+        waveSpeed: 0.7,
+        zoom: 0.65,
+        backgroundColor: 0x000000,
+      });
+    } else if (tries < 100) {
+      setTimeout(() => this.initVanta(tries + 1), 100);
+    }
+  }
+  componentWillUnmount() {
+    // Sin esto queda un render loop de WebGL corriendo en segundo plano.
+    if (this.vantaEffect) { this.vantaEffect.destroy(); this.vantaEffect = null; }
+  }
+
+  // ============ SISTEMA DE RESERVAS ============
+  initBooking() {
+    if (this._bookingReady) return;
+    this._bookingReady = true;
+    this.WA = '50670861607';
+    this.slotsCache = {};   // dateStr -> [{s,e}] de horas ocupadas (desde Supabase)
+    this._sb = null;
+    this.SERVICES = [
+      { name: 'Corte de pelo', price: '₡6.000', dur: 60 },
+      { name: 'Recorte de barba', price: '₡4.000', dur: 30 },
+      { name: 'Corte infantil', price: '₡6.000', dur: 60 },
+      { name: 'Corte y barba', price: '₡8.000', dur: 90 },
+    ];
+    this.MONTHS = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+    this.DOW = ['domingo','lunes','martes','miércoles','jueves','viernes','sábado'];
+    const now = new Date();
+    this.b = { step: 'service', cursor: new Date(now.getFullYear(), now.getMonth(), 1), servicio: null, dur: null, price: null, selDate: null, selTime: null, form: { nombre: '', telefono: '+506 ', email: '', mensaje: '', acepto: false }, done: false };
+    // "Panel del barbero" ahora abre la consola privada (login real), no el panel con PIN.
+    const openBtn = document.getElementById('ox-admin-open');
+    if (openBtn) openBtn.addEventListener('click', () => window.open('consola.html', '_blank'));
+    this.render();
+  }
+  // Cliente de Supabase, creado la primera vez que se necesita (la librería carga async).
+  client() {
+    if (this._sb) return this._sb;
+    if (window.supabase && window.ONYX_SB_URL) {
+      this._sb = window.supabase.createClient(window.ONYX_SB_URL, window.ONYX_SB_KEY);
+    }
+    return this._sb;
+  }
+  // Trae las horas ocupadas del día (sin datos personales) y re-renderiza si sigue en pantalla.
+  async fetchTaken(dateStr) {
+    const sb = this.client();
+    if (!sb) { this.slotsCache[dateStr] = []; return; }
+    try {
+      const { data, error } = await sb.rpc('taken_slots', { d: dateStr });
+      if (error) throw error;
+      this.slotsCache[dateStr] = (data || []).map((r) => ({ s: r.start_min, e: r.end_min }));
+    } catch (e) {
+      this.slotsCache[dateStr] = [];
+    }
+    if (this.b.step === 'schedule' && this.b.selDate === dateStr) this.render();
+  }
+  esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+  pad(n) { return String(n).padStart(2, '0'); }
+  ymd(d) { return d.getFullYear() + '-' + this.pad(d.getMonth() + 1) + '-' + this.pad(d.getDate()); }
+  toMin(t) { const p = t.split(':'); return (+p[0]) * 60 + (+p[1]); }
+  load() { try { return JSON.parse(localStorage.getItem(this.KEY)) || {}; } catch (e) { return {}; } }
+  save(obj) { localStorage.setItem(this.KEY, JSON.stringify(obj)); }
+  fmtLong(dateStr) { const d = new Date(dateStr + 'T00:00:00'); return this.DOW[d.getDay()] + ' ' + d.getDate() + ' de ' + this.MONTHS[d.getMonth()]; }
+
+  render() {
+    const root = document.getElementById('ox-booking'); if (!root) return;
+    if (this.b.done) { root.innerHTML = this.viewDone(); this.wire(); return; }
+    const idx = this.b.step === 'service' ? 0 : this.b.step === 'schedule' ? 1 : 2;
+    root.innerHTML = this.viewStepper(idx) + this.viewStepBody() + this.viewSummaryBar();
+    this.wire();
+    this.wireCountdown();
+  }
+  viewStepBody() {
+    if (this.b.step === 'service') return this.viewService();
+    if (this.b.step === 'schedule') return this.viewSchedule();
+    return this.viewDetails();
+  }
+  minToStr(m) { return this.pad(Math.floor(m / 60)) + ':' + this.pad(m % 60); }
+  to12(m) { const h = Math.floor(m / 60), mm = m % 60; const h12 = h % 12 === 0 ? 12 : h % 12; return h12 + ':' + this.pad(mm); }
+  durFor(x) { return (x && x.dur) || 60; }
+  fmtRange(startStr, dur) { const s = this.toMin(startStr); return startStr + '–' + this.minToStr(s + dur); }
+  hoursFor(dateStr) { const wd = new Date(dateStr + 'T00:00:00').getDay(); if (wd === 0) return null; return { open: (wd === 6 ? 8 : 9) * 60, close: (wd === 6 ? 18 : 19) * 60 }; }
+  availStarts(dateStr, dur) {
+    const h = this.hoursFor(dateStr); if (!h) return [];
+    const bk = this.slotsCache[dateStr] || [];   // horas ocupadas traídas de Supabase
+    const today = new Date(), todayStr = this.ymd(today), nowMin = today.getHours() * 60 + today.getMinutes();
+    const out = [];
+    for (let m = h.open; m + dur <= h.close; m += 30) {
+      if (dateStr === todayStr && m <= nowMin) continue;
+      const overlap = bk.some((b) => m < b.e && b.s < m + dur);
+      if (!overlap) out.push(m);
+    }
+    return out;
+  }
+
+  viewStepper(active) {
+    const labels = ['Elegí tu servicio', 'Elegí día y hora', 'Dejanos tus datos'];
+    const cells = labels.map((l, i) => {
+      const on = i <= active, jumpable = i < active;
+      return '<div ' + (jumpable ? 'data-jump="' + (i === 0 ? 'service' : 'schedule') + '"' : '') + ' style="display:flex; align-items:center; gap:10px; ' + (jumpable ? 'cursor:pointer;' : '') + '">'
+        + '<div style="font-family:\'Brown Sugar\',serif; font-size:26px; line-height:1; ' + (on ? 'color:#fff;' : 'color:rgba(255,255,255,.32);') + '">' + this.pad(i + 1) + '</div>'
+        + '<span style="font-family:\'HN Cn\',sans-serif; font-size:11.5px; letter-spacing:.1em; text-transform:uppercase; ' + (on ? 'color:#fff;' : 'color:rgba(255,255,255,.38);') + '">' + l + '</span></div>';
+    }).join('<div style="flex:1; height:1px; background:rgba(255,255,255,.16); margin:0 10px; min-width:14px;"></div>');
+    return '<div style="display:flex; align-items:center; margin-bottom:28px; flex-wrap:wrap; gap:10px;">' + cells + '</div>';
+  }
+
+  viewService() {
+    const cards = this.SERVICES.map((s, i) => {
+      const on = this.b.servicio === s.name;
+      return '<button data-serv="' + i + '" style="text-align:left; display:flex; flex-direction:column; gap:14px; padding:22px; border-radius:16px; cursor:pointer; transition:border-color .25s ease, background .25s ease; border:1px solid ' + (on ? '#fff' : 'rgba(255,255,255,.16)') + '; background:' + (on ? 'rgba(255,255,255,.08)' : 'linear-gradient(180deg,rgba(255,255,255,.03),transparent)') + ';">'
+        + '<div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px;">'
+        + '<div style="font-family:\'HN Cn\',sans-serif; font-weight:700; font-size:17px; letter-spacing:.02em; color:#fff; text-transform:uppercase; line-height:1.2;">' + this.esc(s.name) + '</div>'
+        + '<div style="width:24px; height:24px; border-radius:50%; border:1px solid ' + (on ? '#fff' : 'rgba(255,255,255,.3)') + '; display:flex; align-items:center; justify-content:center; flex-shrink:0;">' + (on ? '<div style="width:11px; height:11px; border-radius:50%; background:#fff;"></div>' : '') + '</div></div>'
+        + '<div style="display:flex; align-items:center; justify-content:space-between;">'
+        + '<span style="font-family:\'HN Cn\',sans-serif; font-size:12.5px; color:rgba(255,255,255,.55);">' + s.dur + ' min</span>'
+        + '<span style="font-family:\'Brown Sugar\',serif; font-size:26px; color:#fff;">' + this.esc(s.price) + '</span></div></button>';
+    }).join('');
+    return '<div style="display:flex; flex-direction:column; gap:16px;">'
+      + '<div style="font-family:\'HN Cn\',sans-serif; font-size:12px; letter-spacing:.16em; color:rgba(255,255,255,.5); text-transform:uppercase;">01 · Elegí tu servicio</div>'
+      + '<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px;">' + cards + '</div></div>';
+  }
+
+  viewSchedule() {
+    const cur = this.b.cursor, y = cur.getFullYear(), m = cur.getMonth();
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const todayStr = this.ymd(today);
+    const maxD = new Date(today); maxD.setDate(maxD.getDate() + 60);
+    const first = new Date(y, m, 1), start = first.getDay(), days = new Date(y, m + 1, 0).getDate();
+    const prevOk = new Date(y, m, 1) > new Date(today.getFullYear(), today.getMonth(), 1);
+    let cells = '';
+    for (let i = 0; i < start; i++) cells += '<div></div>';
+    for (let dnum = 1; dnum <= days; dnum++) {
+      const dt = new Date(y, m, dnum), ds = this.ymd(dt), wd = dt.getDay();
+      const past = ds < todayStr, closed = wd === 0, far = dt > maxD;
+      const dis = past || closed || far;
+      const sel = ds === this.b.selDate;
+      let st = 'position:relative; aspect-ratio:1/1; display:flex; align-items:center; justify-content:center; border-radius:50%; font-family:\'HN Cn\',sans-serif; font-size:14.5px; transition:border-color .2s ease; ';
+      if (sel) st += 'border:1.5px solid #fff; color:#fff; font-weight:700; cursor:pointer;';
+      else if (dis) st += 'color:rgba(255,255,255,.16); cursor:default;';
+      else st += 'color:#fff; border:1px solid transparent; cursor:pointer;';
+      const dot = (!dis && !sel) ? '<span style="position:absolute; bottom:5px; width:3px; height:3px; border-radius:50%; background:rgba(255,255,255,.5);"></span>' : '';
+      cells += '<div ' + (dis ? '' : 'data-day="' + ds + '"') + ' style="' + st + '">' + dnum + dot + '</div>';
+    }
+    const dows = ['Do','Lu','Ma','Mi','Ju','Vi','Sá'].map((d) => '<div style="text-align:center; font-family:\'HN Cn\',sans-serif; font-size:10px; letter-spacing:.12em; color:rgba(255,255,255,.4); text-transform:uppercase; padding-bottom:6px;">' + d + '</div>').join('');
+    const calendar = '<div style="border:1px solid rgba(255,255,255,.14); border-radius:18px; padding:20px; background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);">'
+      + '<div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">'
+      + '<button ' + (prevOk ? 'data-mv="-1"' : 'disabled') + ' style="width:32px; height:32px; border-radius:50%; border:1px solid rgba(255,255,255,.2); background:none; color:' + (prevOk ? '#fff' : 'rgba(255,255,255,.2)') + '; cursor:' + (prevOk ? 'pointer' : 'default') + '; font-size:15px;">‹</button>'
+      + '<div style="font-family:\'HN Cn\',sans-serif; font-weight:700; font-size:15px; letter-spacing:.05em; color:#fff; text-transform:capitalize;">' + this.MONTHS[m] + ' ' + y + '</div>'
+      + '<button data-mv="1" style="width:32px; height:32px; border-radius:50%; border:1px solid rgba(255,255,255,.2); background:none; color:#fff; cursor:pointer; font-size:15px;">›</button></div>'
+      + '<div style="display:grid; grid-template-columns:repeat(7,1fr); gap:4px;">' + dows + cells + '</div>'
+      + '<div style="margin-top:14px; font-family:\'HN Cn\',sans-serif; font-size:11.5px; color:rgba(255,255,255,.4);">Domingos cerrado · Lun–Vie 9–19 · Sáb 8–18</div></div>';
+
+    let slots = '';
+    if (this.b.selDate && this.slotsCache[this.b.selDate] === undefined) {
+      // Todavía no llegaron las horas ocupadas del día desde Supabase.
+      slots = '<div style="margin-top:18px; padding:22px; text-align:center; border:1px solid rgba(255,255,255,.12); border-radius:14px; font-family:\'HN Cn\',sans-serif; font-size:14px; color:rgba(255,255,255,.55);">Cargando horarios disponibles…</div>';
+    } else if (this.b.selDate) {
+      const starts = this.availStarts(this.b.selDate, this.b.dur);
+      const am = starts.filter((x) => x < 720), pm = starts.filter((x) => x >= 720);
+      const pill = (m2) => { const s = this.minToStr(m2), sel = this.b.selTime === s; return '<button data-slot="' + s + '" style="padding:11px 16px; border-radius:99px; font-family:\'HN Cn\',sans-serif; font-weight:700; font-size:14px; cursor:pointer; transition:all .2s ease; border:1px solid ' + (sel ? '#fff' : 'rgba(255,255,255,.22)') + '; background:' + (sel ? '#fff' : 'transparent') + '; color:' + (sel ? '#000' : '#fff') + ';">' + this.to12(m2) + '</button>'; };
+      const group = (label, arr) => arr.length ? '<div style="margin-top:18px;"><div style="font-family:\'HN Cn\',sans-serif; font-size:11.5px; letter-spacing:.16em; color:rgba(255,255,255,.5); text-transform:uppercase; margin-bottom:10px;">' + label + '</div><div style="display:flex; flex-wrap:wrap; gap:8px;">' + arr.map(pill).join('') + '</div></div>' : '';
+      slots = starts.length === 0
+        ? '<div style="margin-top:18px; padding:22px; text-align:center; border:1px solid rgba(255,255,255,.12); border-radius:14px; font-family:\'HN Cn\',sans-serif; font-size:14px; color:rgba(255,255,255,.55);">No hay horarios libres este día para ' + this.esc(this.b.servicio) + '. Probá otra fecha.</div>'
+        : group('Mañana', am) + group('Tarde', pm);
+    }
+    return '<div style="display:flex; flex-direction:column; gap:16px;">'
+      + '<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">'
+      + '<div style="font-family:\'HN Cn\',sans-serif; font-size:12px; letter-spacing:.16em; color:rgba(255,255,255,.5); text-transform:uppercase;">02 · Elegí día y hora</div>'
+      + '<button data-jump="service" style="background:none; border:none; cursor:pointer; font-family:\'HN Cn\',sans-serif; font-size:12px; letter-spacing:.1em; color:rgba(255,255,255,.6); text-transform:uppercase; text-decoration:underline;">Cambiar servicio</button></div>'
+      + calendar + slots + '</div>';
+  }
+
+  viewDetails() {
+    const inp = 'width:100%; background:#141416; border:1px solid rgba(255,255,255,.16); border-radius:10px; padding:14px 16px; font-family:\'HN Cn\',sans-serif; font-size:16px; color:#fff; outline:none;';
+    const lab = 'display:block; font-family:\'HN Cn\',sans-serif; font-size:12px; letter-spacing:.16em; color:rgba(255,255,255,.5); text-transform:uppercase; margin-bottom:7px;';
+    const f = this.b.form || {};
+    if (!this._countdownStarted) { this._countdownStarted = true; this._countdownEnd = Date.now() + 9 * 60000 + 55000; }
+    return '<div style="display:flex; flex-direction:column; gap:16px;">'
+      + '<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;">'
+      + '<div style="font-family:\'HN Cn\',sans-serif; font-size:12px; letter-spacing:.16em; color:rgba(255,255,255,.5); text-transform:uppercase;">03 · Dejanos tus datos</div>'
+      + '<button data-jump="schedule" style="background:none; border:none; cursor:pointer; font-family:\'HN Cn\',sans-serif; font-size:12px; letter-spacing:.1em; color:rgba(255,255,255,.6); text-transform:uppercase; text-decoration:underline;">Cambiar día y hora</button></div>'
+      + '<div style="border:1px solid rgba(255,255,255,.14); border-radius:18px; padding:22px; display:flex; flex-direction:column; gap:14px; background:linear-gradient(180deg,rgba(255,255,255,.03),transparent);">'
+      + '<div><label style="' + lab + '">Nombre completo</label><input id="bk-nombre" type="text" value="' + this.esc(f.nombre || '') + '" placeholder="Tu nombre" style="' + inp + '"></div>'
+      + '<div><label style="' + lab + '">Teléfono</label><input id="bk-tel" type="tel" value="' + this.esc(f.telefono || '+506 ') + '" style="' + inp + '"></div>'
+      + '<div><label style="' + lab + '">Email</label><input id="bk-email" type="email" value="' + this.esc(f.email || '') + '" placeholder="tucorreo@mail.com" style="' + inp + '"></div>'
+      + '<div><label style="' + lab + '">Mensaje <span style="text-transform:none; letter-spacing:0; color:rgba(255,255,255,.35);">(opcional)</span></label><textarea id="bk-msg" rows="3" placeholder="Algo que debamos saber" style="' + inp + ' resize:vertical; font-family:\'HN Cn\',sans-serif;">' + this.esc(f.mensaje || '') + '</textarea></div>'
+      + '<label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; margin-top:2px;"><input id="bk-acepto" type="checkbox" ' + (f.acepto ? 'checked' : '') + ' style="margin-top:3px; accent-color:#fff;"><span style="font-family:\'HN Cn\',sans-serif; font-size:13px; line-height:1.5; color:rgba(255,255,255,.6);">He leído y acepto los términos de la reserva.</span></label>'
+      + '<div id="bk-err" style="display:none; font-family:\'HN Cn\',sans-serif; font-size:13px; color:#e8837c;"></div>'
+      + '<div style="font-family:\'HN Cn\',sans-serif; font-size:12px; color:rgba(255,255,255,.4); text-align:center; margin-top:2px;">Te guardamos el campo por <span id="ox-countdown">9:55</span></div>'
+      + '</div></div>';
+  }
+
+  viewSummaryBar() {
+    const s = this.SERVICES.find((x) => x.name === this.b.servicio);
+    const dateTxt = this.b.selDate ? this.fmtLong(this.b.selDate) + (this.b.selTime ? ' · ' + this.to12(this.toMin(this.b.selTime)) : '') : 'Elegí día y hora';
+    return '<div style="position:sticky; bottom:0; margin-top:22px; padding:16px 18px; border-radius:16px; background:rgba(10,10,10,.92); backdrop-filter:blur(14px); border:1px solid rgba(255,255,255,.16); display:flex; align-items:center; justify-content:space-between; gap:14px; flex-wrap:wrap; box-shadow:0 20px 50px rgba(0,0,0,.5);">'
+      + '<div style="display:flex; flex-direction:column; gap:2px; min-width:0;">'
+      + '<div style="font-family:\'HN Cn\',sans-serif; font-weight:700; font-size:13.5px; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + (s ? this.esc(s.name) : 'Elegí tu servicio') + '</div>'
+      + '<div style="font-family:\'HN Cn\',sans-serif; font-size:11.5px; color:rgba(255,255,255,.5); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">' + this.esc(dateTxt) + '</div></div>'
+      + '<div style="display:flex; align-items:center; gap:16px;">'
+      + '<div style="font-family:\'Brown Sugar\',serif; font-size:24px; color:#fff;">' + (s ? this.esc(s.price) : '—') + '</div>'
+      + '<button data-reservar style="background:#fff; color:#000; border:none; border-radius:99px; padding:15px 28px; font-family:\'HN Cn\',sans-serif; font-weight:700; font-size:14px; letter-spacing:.14em; text-transform:uppercase; cursor:pointer; transition:transform .25s ease; white-space:nowrap;">Reservá</button></div></div>';
+  }
+
+  viewDone() {
+    const f = this.b.form, s = this.SERVICES.find((x) => x.name === this.b.servicio) || {};
+    return '<div style="border:1px solid rgba(255,255,255,.14); border-radius:18px; padding:34px 26px; text-align:center; background:linear-gradient(180deg,rgba(255,255,255,.04),transparent);">'
+      + '<div style="width:64px; height:64px; border-radius:50%; background:#fff; display:flex; align-items:center; justify-content:center; margin:0 auto 20px;"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#000" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>'
+      + '<div style="font-family:\'Brown Sugar\',serif; font-size:30px; line-height:1.05; color:#fff;">Tu cita quedó reservada.</div>'
+      + '<div style="font-family:\'HN Cn\',sans-serif; font-size:15px; color:rgba(255,255,255,.6); margin-top:10px;">' + (f.email ? 'Te enviamos la confirmación a <span style="color:rgba(255,255,255,.85);">' + this.esc(f.email) + '</span>. ' : '') + 'Si necesitás cambiarla o cancelarla, escribinos por WhatsApp.</div>'
+      + '<div style="margin:24px auto 0; max-width:340px; text-align:left; border-top:1px solid rgba(255,255,255,.12); padding-top:18px; display:flex; flex-direction:column; gap:9px;">'
+      + this.rowKV('Servicio', s.name || this.b.servicio) + this.rowKV('Fecha', this.fmtLong(this.b.selDate)) + this.rowKV('Hora', this.fmtRange(this.b.selTime, this.b.dur)) + this.rowKV('Nombre', f.nombre) + '</div>'
+      // Último paso, y el que más nos sirve: que el cliente nos escriba él.
+      // Le abre WhatsApp con todo redactado; solo tiene que darle enviar. Así el
+      // barbero queda con su chat abierto para cualquier cambio posterior.
+      + '<div style="margin:24px auto 0; max-width:340px; border:1px solid rgba(255,255,255,.16); border-radius:14px; padding:18px 18px 20px; background:rgba(255,255,255,.03);">'
+      + '<div style="font-family:\'HN Cn\',sans-serif; font-size:11px; letter-spacing:.2em; text-transform:uppercase; color:rgba(255,255,255,.42);">Último paso</div>'
+      + '<div style="font-family:\'HN Cn\',sans-serif; font-size:15px; color:rgba(255,255,255,.82); margin-top:7px; line-height:1.55;">Mandanos el WhatsApp de confirmación. <span style="color:#fff;">Ya te lo dejamos escrito</span> — solo tenés que darle enviar.</div>'
+      + '<button data-wa style="width:100%; display:flex; align-items:center; justify-content:center; gap:10px; background:#fff; color:#000; border:none; border-radius:99px; padding:15px; margin-top:15px; font-family:\'HN Cn\',sans-serif; font-weight:700; font-size:14px; letter-spacing:.14em; text-transform:uppercase; cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="#000"><path d="M12 2a10 10 0 0 0-8.6 15l-1.4 5 5.1-1.3A10 10 0 1 0 12 2z"/></svg>Confirmar por WhatsApp</button>'
+      + (this.b.ref ? '<div style="font-family:\'HN Cn\',sans-serif; font-size:12px; color:rgba(255,255,255,.38); text-align:center; margin-top:12px;">Código de tu cita: <span style="font-family:ui-monospace,Menlo,monospace; color:rgba(255,255,255,.7);">#' + this.esc(this.b.ref) + '</span></div>' : '')
+      + '</div>'
+      + '<div style="display:flex; flex-direction:column; gap:10px; margin-top:14px;">'
+      + '<button data-again style="background:none; border:1px solid rgba(255,255,255,.24); color:#fff; border-radius:99px; padding:14px; font-family:\'HN Cn\',sans-serif; font-weight:400; font-size:13px; letter-spacing:.14em; text-transform:uppercase; cursor:pointer;">Agendar otra cita</button>'
+      + '</div></div>';
+  }
+  rowKV(k, v) { return '<div style="display:flex; justify-content:space-between; gap:16px;"><span style="font-family:\'HN Cn\',sans-serif; font-size:12px; letter-spacing:.14em; color:rgba(255,255,255,.45); text-transform:uppercase;">' + k + '</span><span style="font-family:\'HN Cn\',sans-serif; font-size:15px; color:#fff; text-align:right;">' + this.esc(v) + '</span></div>'; }
+
+  stopCountdown() { if (this._countdownTimer) { clearInterval(this._countdownTimer); this._countdownTimer = null; } }
+  wireCountdown() {
+    // Solo corre mientras el paso 3 está en pantalla: fuera de ahí el intervalo se apaga.
+    if (this.b.step !== 'details' || this.b.done) { this.stopCountdown(); return; }
+    if (this._countdownTimer) return;
+    const tick = () => {
+      const span = document.getElementById('ox-countdown');
+      if (!span || !this._countdownEnd) { this.stopCountdown(); return; }
+      const s = Math.floor(Math.max(0, this._countdownEnd - Date.now()) / 1000);
+      span.textContent = Math.floor(s / 60) + ':' + this.pad(s % 60);
+      if (s <= 0) this.stopCountdown();
+    };
+    tick();
+    this._countdownTimer = setInterval(tick, 1000);
+  }
+
+  wire() {
+    const root = document.getElementById('ox-booking'); if (!root) return;
+    root.querySelectorAll('[data-serv]').forEach((b) => b.addEventListener('click', () => { const s = this.SERVICES[+b.getAttribute('data-serv')]; this.b.servicio = s.name; this.b.dur = s.dur; this.b.price = s.price; this.b.step = 'schedule'; this.render(); }));
+    root.querySelectorAll('[data-jump]').forEach((b) => b.addEventListener('click', () => { this.captureForm(); this.b.step = b.getAttribute('data-jump'); this.render(); }));
+    root.querySelectorAll('[data-mv]').forEach((b) => b.addEventListener('click', () => { this.b.cursor = new Date(this.b.cursor.getFullYear(), this.b.cursor.getMonth() + (+b.getAttribute('data-mv')), 1); this.render(); }));
+    root.querySelectorAll('[data-day]').forEach((b) => b.addEventListener('click', () => { const ds = b.getAttribute('data-day'); this.b.selDate = ds; this.b.selTime = null; if (this.slotsCache[ds] === undefined) this.fetchTaken(ds); this.render(); }));
+    root.querySelectorAll('[data-slot]').forEach((b) => b.addEventListener('click', () => { this.b.selTime = b.getAttribute('data-slot'); this.b.step = 'details'; this.render(); }));
+    const again = root.querySelector('[data-again]'); if (again) again.addEventListener('click', () => this.resetBooking());
+    const wa = root.querySelector('[data-wa]'); if (wa) wa.addEventListener('click', () => this.sendWA());
+    const rsv = root.querySelector('[data-reservar]'); if (rsv) rsv.addEventListener('click', () => this.goReservar());
+  }
+  captureForm() {
+    if (this.b.step !== 'details') return;
+    const g = (id) => document.getElementById(id);
+    const nombre = g('bk-nombre'), tel = g('bk-tel'), email = g('bk-email'), msg = g('bk-msg'), acepto = g('bk-acepto');
+    this.b.form = { nombre: nombre ? nombre.value.trim() : this.b.form.nombre, telefono: tel ? tel.value.trim() : this.b.form.telefono, email: email ? email.value.trim() : this.b.form.email, mensaje: msg ? msg.value.trim() : this.b.form.mensaje, acepto: acepto ? acepto.checked : this.b.form.acepto };
+  }
+  resetBooking() {
+    const now = new Date();
+    this._countdownStarted = false; this._countdownEnd = null; this._saving = false;
+    if (this._countdownTimer) { clearInterval(this._countdownTimer); this._countdownTimer = null; }
+    this.b = { step: 'service', cursor: new Date(now.getFullYear(), now.getMonth(), 1), servicio: null, dur: null, price: null, selDate: null, selTime: null, form: { nombre: '', telefono: '+506 ', email: '', mensaje: '', acepto: false }, done: false };
+    this.render();
+  }
+  async goReservar() {
+    if (!this.b.servicio) { this.b.step = 'service'; this.render(); return; }
+    if (!this.b.selDate || !this.b.selTime) { this.b.step = 'schedule'; this.render(); return; }
+    if (this.b.step !== 'details') { this.b.step = 'details'; this.render(); return; }
+    this.captureForm();
+    const f = this.b.form;
+    const digits = f.telefono.replace(/\D/g, '');
+    if (!f.nombre) return this.showErr('Escribí tu nombre completo.');
+    if (digits.replace(/^506/, '').length < 8) return this.showErr('Escribí un teléfono válido.');
+    if (!f.email || !/^\S+@\S+\.\S+$/.test(f.email)) return this.showErr('Escribí un correo válido.');
+    if (!f.acepto) return this.showErr('Aceptá los términos para continuar.');
+    if (this._saving) return;
+    const sb = this.client();
+    if (!sb) return this.showErr('No hay conexión con el sistema de reservas. Escribinos por WhatsApp.');
+    const ds = this.b.selDate, start = this.toMin(this.b.selTime), dur = this.b.dur;
+    // El id lo generamos acá para poder avisarle a la función del servidor cuál cita
+    // acabamos de crear (la RLS no deja que el sitio público lea de vuelta la fila).
+    const bookingId = this.uuid();
+    this._saving = true;
+    const btn = document.querySelector('[data-reservar]'); if (btn) { btn.textContent = 'Reservando…'; btn.disabled = true; }
+    const restoreBtn = () => { if (btn) { btn.textContent = 'Reservá'; btn.disabled = false; } };
+    try {
+      const { error } = await sb.from('bookings').insert({
+        id: bookingId,
+        service: this.b.servicio, duration_min: dur, price: this.b.price,
+        booking_date: ds, start_min: start, end_min: start + dur,
+        customer_name: f.nombre, customer_phone: digits, customer_email: f.email, message: f.mensaje || null,
+      });
+      this._saving = false;
+      if (error) {
+        // 23P01 = violación de la restricción anti-traslape: alguien tomó la hora primero.
+        if (error.code === '23P01' || /no_overlap|exclu/i.test(error.message || '')) {
+          this.slotsCache[ds] = undefined; this.fetchTaken(ds);
+          this.showErr('Uy, ese horario se acaba de ocupar. Elegí otro.');
+          this.b.step = 'schedule'; this.b.selTime = null; this.render(); return;
+        }
+        restoreBtn();
+        return this.showErr('No pudimos guardar la cita. Probá de nuevo o escribinos por WhatsApp.');
+      }
+      this.slotsCache[ds] = undefined;   // la hora ya quedó ocupada; refrescar disponibilidad
+      this.notifyBooking(bookingId);     // calendario + correo, en segundo plano
+      this.b.ref = this.refDe(bookingId); // código corto para el WhatsApp y la consola
+      this.b.done = true; this.render();
+    } catch (e) {
+      this._saving = false; restoreBtn();
+      this.showErr('No pudimos guardar la cita. Probá de nuevo o escribinos por WhatsApp.');
+    }
+  }
+  showErr(msg) { const err = document.getElementById('bk-err'); if (err) { err.textContent = msg; err.style.display = 'block'; } return false; }
+  // Id propio para la cita. crypto.randomUUID existe en todo navegador moderno servido
+  // por http(s); el respaldo es por si alguien abre el archivo con doble clic.
+  uuid() {
+    try { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
+  // Fase 2: le pide al servidor que cree el evento en Google Calendar y mande el correo.
+  // Va en segundo plano a propósito: si esto falla o tarda, la cita YA quedó guardada
+  // y el cliente igual ve su confirmación en pantalla.
+  notifyBooking(id) {
+    const sb = this.client(); if (!sb) return;
+    try {
+      sb.functions.invoke('confirmar-cita', { body: { id: id, accion: 'nueva' } }).catch(() => {});
+    } catch (e) { /* la cita ya está guardada; el barbero la ve igual en su consola */ }
+  }
+  // Código corto de la cita: las primeras 6 letras del id, en mayúscula. Le sirve
+  // al barbero para saber de cuál cita le está hablando el cliente por WhatsApp.
+  refDe(id) { return String(id || '').replace(/-/g, '').slice(0, 6).toUpperCase(); }
+
+  // Abre el WhatsApp del cliente con el mensaje ya escrito hacia ONYX. El cliente
+  // solo le da enviar. Además de confirmar, eso deja el chat abierto en el teléfono
+  // del barbero, que es por donde después se hablan si hay que mover la cita.
+  sendWA() {
+    const f = this.b.form;
+    const t = 'Hola ONYX, confirmo mi cita 👇\n\n'
+      + 'Nombre: ' + f.nombre + '\n'
+      + 'Servicio: ' + this.b.servicio + '\n'
+      + 'Fecha: ' + this.fmtLong(this.b.selDate) + '\n'
+      + 'Hora: ' + this.fmtRange(this.b.selTime, this.b.dur) + '\n'
+      + (this.b.ref ? 'Código: #' + this.b.ref + '\n' : '')
+      + '\n¡Nos vemos!';
+    window.open('https://wa.me/' + this.WA + '?text=' + encodeURIComponent(t), '_blank');
+  }
+
+  // ============ PANEL ADMIN ============
+  openAdmin() {
+    if (this._adminAuthed !== true) {
+      const pin = window.prompt('PIN del barbero:');
+      if (pin == null) return;
+      if (pin !== this.ADMIN_PIN) { window.alert('PIN incorrecto.'); return; }
+      this._adminAuthed = true;
+    }
+    const adm = document.getElementById('ox-admin'); if (!adm) return;
+    adm.style.display = 'block'; document.body.style.overflow = 'hidden';
+    this.renderAdmin();
+  }
+  closeAdmin() { const adm = document.getElementById('ox-admin'); if (adm) adm.style.display = 'none'; document.body.style.overflow = ''; }
+  renderAdmin() {
+    const adm = document.getElementById('ox-admin'); if (!adm) return;
+    const store = this.load();
+    const todayStr = this.ymd(new Date());
+    const dates = Object.keys(store).filter((d) => (store[d] || []).length).sort();
+    let total = 0; dates.forEach((d) => total += store[d].length);
+    let body;
+    if (dates.length === 0) {
+      body = '<div style="padding:50px 20px; text-align:center; font-family:\'HN Cn\',sans-serif; font-size:15px; color:rgba(255,255,255,.5);">Todavía no hay citas agendadas.</div>';
+    } else {
+      body = dates.map((d) => {
+        const rows = store[d].slice().sort((a, b) => this.toMin(a.time) - this.toMin(b.time)).map((x) => {
+          const waLink = 'https://wa.me/506' + x.whatsapp.replace(/^506/, '');
+          return '<div style="display:grid; grid-template-columns:64px 1fr auto; gap:12px; align-items:center; padding:12px 0; border-top:1px solid rgba(255,255,255,.1);">'
+            + '<div style="font-family:\'Brown Sugar\',serif; font-size:19px; color:#fff; line-height:1.1;">' + x.time + '<div style="font-family:\'HN Cn\',sans-serif; font-size:10px; color:rgba(255,255,255,.4); letter-spacing:.04em;">a ' + this.minToStr(this.toMin(x.time) + this.durFor(x)) + '</div></div>'
+            + '<div style="min-width:0;"><div style="font-family:\'HN Cn\',sans-serif; font-weight:700; font-size:15px; color:#fff;">' + this.esc(x.nombre) + '</div>'
+            + '<div style="font-family:\'HN Cn\',sans-serif; font-size:13px; color:rgba(255,255,255,.55);">' + this.esc(x.servicio) + ' · ' + this.durFor(x) + ' min</div>'
+            + (x.email ? '<div style="font-family:\'HN Cn\',sans-serif; font-size:12px; color:rgba(255,255,255,.4); margin-top:1px;">' + this.esc(x.email) + '</div>' : '')
+            + (x.comentario ? '<div style="font-family:\'HN Cn\',sans-serif; font-size:12.5px; color:rgba(255,255,255,.4); margin-top:2px;">“' + this.esc(x.comentario) + '”</div>' : '')
+            + '<a href="' + waLink + '" target="_blank" style="display:inline-block; margin-top:4px; font-family:\'HN Cn\',sans-serif; font-size:12.5px; color:#7fd4a8; text-decoration:none;">WhatsApp ' + this.esc(x.whatsapp) + ' ›</a></div>'
+            + '<button data-cancel="' + d + '|' + x.time + '" title="Cancelar" style="width:30px; height:30px; border-radius:50%; border:1px solid rgba(255,255,255,.2); background:none; color:rgba(255,255,255,.6); cursor:pointer; font-size:15px;">×</button></div>';
+        }).join('');
+        return '<div style="margin-bottom:18px;"><div style="display:flex; align-items:baseline; gap:10px; margin-bottom:2px;">'
+          + '<div style="font-family:\'HN Cn\',sans-serif; font-weight:700; font-size:15px; letter-spacing:.06em; color:#fff; text-transform:capitalize;">' + this.fmtLong(d) + '</div>'
+          + (d === todayStr ? '<span style="font-family:\'HN Cn\',sans-serif; font-size:10px; letter-spacing:.14em; text-transform:uppercase; color:#000; background:#fff; padding:2px 8px; border-radius:99px;">Hoy</span>' : '')
+          + '<span style="font-family:\'HN Cn\',sans-serif; font-size:12px; color:rgba(255,255,255,.4); margin-left:auto;">' + store[d].length + ' cita' + (store[d].length > 1 ? 's' : '') + '</span></div>'
+          + rows + '</div>';
+      }).join('');
+    }
+    adm.innerHTML = '<div style="max-width:620px; margin:0 auto; background:#0c0c0d; border:1px solid rgba(255,255,255,.16); border-radius:20px; padding:26px 24px; box-shadow:0 40px 90px rgba(0,0,0,.6);">'
+      + '<div style="display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:6px;">'
+      + '<div><div style="font-family:\'HN Cn\',sans-serif; font-size:11px; letter-spacing:.3em; color:rgba(255,255,255,.45); text-transform:uppercase;">Panel del barbero</div>'
+      + '<div style="font-family:\'Brown Sugar\',serif; font-size:30px; color:#fff; line-height:1;">Citas agendadas</div></div>'
+      + '<button data-admin-close style="width:38px; height:38px; border-radius:50%; border:1px solid rgba(255,255,255,.2); background:none; color:#fff; cursor:pointer; font-size:18px;">×</button></div>'
+      + '<div style="font-family:\'HN Cn\',sans-serif; font-size:13px; color:rgba(255,255,255,.5); margin-bottom:18px;">' + total + ' cita' + (total === 1 ? '' : 's') + ' en total</div>'
+      + body + '</div>';
+    adm.querySelector('[data-admin-close]').addEventListener('click', () => this.closeAdmin());
+    adm.addEventListener('click', (e) => { if (e.target === adm) this.closeAdmin(); }, { once: true });
+    adm.querySelectorAll('[data-cancel]').forEach((b) => b.addEventListener('click', () => {
+      const [d, time] = b.getAttribute('data-cancel').split('|');
+      if (!window.confirm('¿Cancelar esta cita? La hora quedará libre otra vez.')) return;
+      const store = this.load(); store[d] = (store[d] || []).filter((x) => x.time !== time); if (!store[d].length) delete store[d];
+      this.save(store); this.renderAdmin(); if (this.b.step === 'time') this.render();
+    }));
+  }
+
+  renderVals() {
+    const flip = this.state.flip || {};
+    const T = (k) => flip[k] ? 'rotateY(180deg) scale(1.02)' : 'rotateY(0deg) scale(1)';
+    const toggle = (k) => () => this.setState((s) => ({ flip: { ...(s.flip || {}), [k]: !((s.flip || {})[k]) } }));
+    return {
+      stopProp: (e) => e.stopPropagation(),
+      flipFade: T('fade'), onFade: toggle('fade'),
+      flipClasico: T('clasico'), onClasico: toggle('clasico'),
+      flipNinos: T('ninos'), onNinos: toggle('ninos'),
+      flipDiseno: T('diseno'), onDiseno: toggle('diseno'),
+      flipBarba: T('barba'), onBarba: toggle('barba'),
+      flipTextur: T('textur'), onTextur: toggle('textur'),
+    };
+  }
+}
+</script>
+</body>
+</html>
