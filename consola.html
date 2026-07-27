@@ -147,7 +147,7 @@
   function showLogin(text, cls){
     $('appView').hidden = true; $('topbar').hidden = true; $('loginView').hidden = false;
     const m=$('loginMsg'); m.textContent=text||''; m.className='msg '+(cls||'');
-    $('loginHint').innerHTML = 'Si es la primera vez: creá el usuario del dueño en Supabase → Authentication → Users → <b>Add user</b> (con “Auto Confirm”), usando el correo autorizado.';
+    $('loginHint').innerHTML = 'Entrá con el correo del dueño de ONYX. Solo esa cuenta puede ver las citas.';
   }
   function showApp(email){
     $('loginView').hidden = true; $('appView').hidden = false; $('topbar').hidden = false;
