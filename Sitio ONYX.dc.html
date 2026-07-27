@@ -110,6 +110,116 @@
     #ox-vanta.ox-css-bg::before,
     #ox-vanta.ox-css-bg::after { animation: none; }
   }
+
+  /* ============================================================
+     PIEDRA PULIDA — el tacto de todo lo que se puede tocar
+     ------------------------------------------------------------
+     El ónix pulido tiene un filo de luz arriba y peso abajo. Cada
+     botón y cada casilla se comporta como una lasca de esa piedra:
+     al pasar por encima se levanta y atrapa más brillo; al
+     presionarla se hunde y el brillo se apaga. Es el mismo gesto
+     en todo el sitio, así que se aprende una vez y ya.
+     ============================================================ */
+  :root{
+    --piedra-luz:  inset 0 1px 0 rgba(255,255,255,.9);
+    --piedra-peso: inset 0 -2px 0 rgba(0,0,0,.12);
+    --piedra-caida: 0 6px 18px rgba(0,0,0,.5);
+    --piedra-caida-alta: 0 12px 28px rgba(0,0,0,.55), 0 0 0 1px rgba(255,255,255,.16);
+    --gesto: 220ms cubic-bezier(.22,.61,.36,1);
+    --gesto-presion: 90ms ease-out;
+  }
+
+  /* --- Lascas claras (acción principal) --- */
+  #ox-hero-cta a[href="#reservar"],
+  #ox-booking [data-slot],
+  #ox-booking [data-wa],
+  #ox-booking button[data-reservar]{
+    box-shadow: var(--piedra-luz), var(--piedra-peso), var(--piedra-caida);
+    transition: transform var(--gesto), box-shadow var(--gesto), background var(--gesto), border-color var(--gesto);
+  }
+  #ox-hero-cta a[href="#reservar"]:hover,
+  #ox-booking [data-wa]:hover,
+  #ox-booking button[data-reservar]:hover{
+    transform: translateY(-2px);
+    box-shadow: var(--piedra-luz), var(--piedra-peso), var(--piedra-caida-alta);
+  }
+
+  /* --- Lascas oscuras (acción secundaria y casillas) --- */
+  #ox-hero-cta a[href="#cortes"],
+  #ox-booking [data-serv],
+  #ox-booking [data-day],
+  #ox-booking [data-mv],
+  #ox-booking [data-again]{
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.10), 0 4px 14px rgba(0,0,0,.42);
+    transition: transform var(--gesto), box-shadow var(--gesto), background var(--gesto), border-color var(--gesto);
+  }
+  #ox-hero-cta a[href="#cortes"]:hover,
+  #ox-booking [data-serv]:hover,
+  #ox-booking [data-day]:hover,
+  #ox-booking [data-again]:hover{
+    transform: translateY(-2px);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.24), 0 12px 26px rgba(0,0,0,.5), 0 0 0 1px rgba(255,255,255,.2);
+  }
+
+  /* --- El gesto que lo une todo: al presionar, se hunde --- */
+  #ox-hero-cta a:active,
+  #ox-booking [data-slot]:active,
+  #ox-booking [data-serv]:active,
+  #ox-booking [data-day]:active,
+  #ox-booking [data-mv]:active,
+  #ox-booking [data-wa]:active,
+  #ox-booking [data-again]:active,
+  #ox-booking button[data-reservar]:active,
+  #ox-vanta ~ * a[href="#reservar"]:active{
+    transform: translateY(1px) scale(.985);
+    box-shadow: inset 0 2px 5px rgba(0,0,0,.28);
+    transition-duration: var(--gesto-presion);
+  }
+
+  /* Las horas: además del tacto, que se sienta la selección */
+  #ox-booking [data-slot]:hover{ transform: translateY(-2px); border-color:#fff; }
+
+  /* Accesibilidad: el foco del teclado se ve, y siempre igual */
+  #ox-booking [data-slot]:focus-visible,
+  #ox-booking [data-serv]:focus-visible,
+  #ox-booking [data-day]:focus-visible,
+  #ox-hero-cta a:focus-visible,
+  a[href="#reservar"]:focus-visible{
+    outline: 2px solid #fff; outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    #ox-hero-cta a, #ox-booking [data-slot], #ox-booking [data-serv],
+    #ox-booking [data-day], #ox-booking [data-wa], #ox-booking [data-again]{
+      transition: none !important;
+    }
+    #ox-hero-cta a:hover, #ox-booking [data-serv]:hover,
+    #ox-booking [data-day]:hover, #ox-booking [data-slot]:hover{ transform: none; }
+  }
+
+  /* ============================================================
+     TELÉFONO — que el pulgar llegue cómodo
+     ============================================================ */
+  @media (max-width: 560px) {
+    /* Los dos botones del inicio: uno debajo del otro y a todo lo ancho.
+       Apilados se leen en orden de importancia y no quedan a medio ancho. */
+    #ox-hero-cta{
+      flex-direction: column !important;
+      align-items: stretch !important;
+      gap: 11px !important;
+      width: min(100%, 320px);
+      margin-left: auto; margin-right: auto;
+    }
+    #ox-hero-cta a{
+      text-align: center;
+      padding: 17px 24px !important;
+      font-size: 13.5px !important;
+    }
+    /* Las horas disponibles: filas parejas en vez de un renglón desparejo. */
+    #ox-booking [data-slot]{ flex: 1 1 88px; min-height: 46px; }
+    /* Los días del calendario: cuadros más grandes, más fáciles de atinar. */
+    #ox-booking [data-day]{ min-height: 42px; }
+  }
 </style>
 <script src="image-slot.js"></script>
 <!-- Fondo animado Vanta WAVES: three.js r134 (fijo por compatibilidad con Vanta 0.5.24) + build WAVES. -->
@@ -157,7 +267,7 @@
         <div style="width:52px; height:1px; background:rgba(255,255,255,.5);"></div>
         <div style="font-family:'Brown Sugar',serif; font-size:clamp(34px,6.2vw,58px); line-height:1; color:#fff;">Estilo tallado al detalle</div>
         <p style="margin:0; max-width:440px; font-family:'HN Cn',sans-serif; font-size:16px; line-height:1.65; color:rgba(255,255,255,.66);">Cortes y barba con precisión en Ciudad Quesada. Un espacio para salir con más presencia.</p>
-        <div style="display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:4px;">
+        <div id="ox-hero-cta" style="display:flex; gap:14px; flex-wrap:wrap; justify-content:center; margin-top:4px;">
           <a href="#reservar" style="font-family:'HN Cn',sans-serif; font-weight:700; font-size:14px; letter-spacing:.16em; text-transform:uppercase; color:#000; background:#fff; padding:15px 30px; border-radius:99px; text-decoration:none; transition:transform .25s ease, box-shadow .25s ease;" style-hover="transform:translateY(-2px); box-shadow:0 10px 24px rgba(255,255,255,.25);">Reservar cita</a>
           <a href="#cortes" style="font-family:'HN Cn',sans-serif; font-weight:400; font-size:14px; letter-spacing:.16em; text-transform:uppercase; color:#fff; border:1px solid rgba(255,255,255,.32); padding:15px 30px; border-radius:99px; text-decoration:none; transition:border-color .25s ease, background .25s ease;" style-hover="border-color:#fff; background:rgba(255,255,255,.08);">Ver cortes</a>
         </div>
