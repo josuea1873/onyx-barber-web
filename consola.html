@@ -62,6 +62,10 @@
   .card .sync button:disabled{opacity:.5;cursor:default;}
   .card .cancel{background:none;border:1px solid var(--line);color:var(--tx2);border-radius:8px;width:34px;height:34px;font-size:16px;cursor:pointer;flex-shrink:0;}
   .card .cancel:hover{border-color:var(--err);color:var(--err);}
+  /* Botón para mandarle el recordatorio por WhatsApp desde el número del barbero */
+  .acciones{margin-top:9px;}
+  .warec{display:inline-block;font-size:12px;letter-spacing:.06em;color:#0b0b0d;background:#7fd4a8;border-radius:99px;padding:7px 14px;text-decoration:none;font-weight:700;}
+  .warec:hover{background:#98e0ba;}
   /* Código corto de la cita: es el que el cliente manda en su WhatsApp. */
   .ref{margin-left:8px;font-family:ui-monospace,Menlo,monospace;font-size:11px;letter-spacing:.06em;color:var(--tx3);border:1px solid var(--line);border-radius:5px;padding:1px 5px;vertical-align:middle;cursor:help;}
   /* Cuadro para elegir cómo se quita una cita */
@@ -200,6 +204,7 @@
         const cancelled = r.status!=='confirmed';
         const phone = String(r.customer_phone||'').replace(/\D/g,'');
         const wa = phone ? '<a href="https://wa.me/'+phone+'" target="_blank" rel="noopener">WhatsApp '+esc(r.customer_phone)+' ›</a>' : '';
+        const recordar = (!cancelled && phone) ? '<a class="warec" href="'+esc(enlaceRecordatorio(r))+'" target="_blank" rel="noopener" title="Abre tu WhatsApp con el recordatorio ya escrito">Recordarle por WhatsApp</a>' : '';
         const mail = r.customer_email ? '<a class="mail" href="mailto:'+esc(r.customer_email)+'">'+esc(r.customer_email)+'</a>' : '';
         html += '<div class="card'+(cancelled?' cancelled':'')+'">'
           + '<div class="time">'+to12(r.start_min).replace(' ','<small>').replace(/(am|pm)/,'$1</small>')+'</div>'
@@ -207,6 +212,7 @@
           + '<div class="name">'+esc(r.customer_name)+'<span class="ref" title="Código de la cita: el cliente te lo manda en su WhatsApp">#'+esc(refDe(r.id))+'</span>'+(cancelled?'<span class="badge" style="background:#555;color:#fff">Cancelada</span>':'')+'</div>'
           + '<div class="svc">'+esc(r.service)+' · '+r.duration_min+' min'+(r.price?' · '+esc(r.price):'')+'</div>'
           + '<div class="meta">'+wa+mail+'</div>'
+          + (recordar ? '<div class="acciones">'+recordar+'</div>' : '')
           + (r.message?'<div class="note">'+esc(r.message)+'</div>':'')
           + syncRow(r)
           + '</div>'
@@ -261,6 +267,18 @@
   // Código corto de la cita. Es lo que el cliente manda en su WhatsApp, para
   // que puedas saber de cuál cita te está hablando sin preguntarle nada.
   function refDe(id){ return String(id||'').replace(/-/g,'').slice(0,6).toUpperCase(); }
+
+  // Recordatorio listo para mandar desde TU WhatsApp. Sale de tu número, así que
+  // no depende de plantillas ni permisos de Meta: solo tocás y le das enviar.
+  function enlaceRecordatorio(r){
+    const tel = String(r.customer_phone||'').replace(/\D/g,'');
+    const nombre = String(r.customer_name||'').split(' ')[0] || '';
+    const hoy = ymd(new Date());
+    const cuando = r.booking_date === hoy ? 'hoy' : (r.booking_date === ymd(new Date(Date.now()+86400000)) ? 'mañana' : 'el ' + fmtDate(r.booking_date));
+    const txt = 'Hola ' + nombre + '! Te recordamos tu cita en ONYX para ' + cuando + ' a las ' + to12(r.start_min)
+      + '. Si se te complica, avisanos con tiempo y la movemos. ¡Te esperamos!';
+    return 'https://wa.me/' + tel + '?text=' + encodeURIComponent(txt);
+  }
 
   // Preguntar con dos salidas distintas: no es lo mismo cancelar vos una cita
   // (hay que avisarle al cliente) que quitar una que él ya te canceló por WhatsApp.

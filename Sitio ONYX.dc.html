@@ -68,6 +68,47 @@
   @media (max-width: 480px) {
     #ox-booking { min-height:300px; }
   }
+
+  /* --- Fondo de respaldo, en CSS puro ---
+     El fondo 3D (Vanta/WebGL) no arranca en todos los teléfonos: algunos
+     navegadores lo bloquean por batería y otros no le dan contexto gráfico.
+     Cuando eso pasa, en vez de quedar un negro plano se activa esta versión:
+     unas olas lentas hechas con degradados. No usa WebGL, no calienta el
+     teléfono y se ve prácticamente igual. */
+  #ox-vanta.ox-css-bg {
+    background:
+      radial-gradient(140% 90% at 50% 108%, rgba(255,255,255,.10), transparent 62%),
+      linear-gradient(180deg, #000 0%, #08080a 45%, #000 100%);
+    overflow: hidden;
+  }
+  #ox-vanta.ox-css-bg::before,
+  #ox-vanta.ox-css-bg::after {
+    content: ''; position: absolute; left: -60%; right: -60%; height: 62vh; bottom: -12vh;
+    background: repeating-linear-gradient(
+      100deg,
+      transparent 0 38px,
+      rgba(255,255,255,.055) 38px 40px,
+      transparent 40px 96px
+    );
+    transform: rotate(-7deg);
+    animation: ox-ola 26s linear infinite;
+    will-change: transform;
+  }
+  #ox-vanta.ox-css-bg::after {
+    height: 46vh; bottom: 4vh; opacity: .55;
+    transform: rotate(5deg);
+    animation-duration: 38s;
+    animation-direction: reverse;
+  }
+  @keyframes ox-ola {
+    from { transform: rotate(-7deg) translateX(0); }
+    to   { transform: rotate(-7deg) translateX(-96px); }
+  }
+  /* Si el sistema pide menos movimiento, se queda quieto pero sigue viéndose. */
+  @media (prefers-reduced-motion: reduce) {
+    #ox-vanta.ox-css-bg::before,
+    #ox-vanta.ox-css-bg::after { animation: none; }
+  }
 </style>
 <script src="image-slot.js"></script>
 <!-- Fondo animado Vanta WAVES: three.js r134 (fijo por compatibilidad con Vanta 0.5.24) + build WAVES. -->
@@ -422,6 +463,8 @@
     <div style="margin-top:34px; padding-top:24px; border-top:1px solid rgba(255,255,255,.08); display:flex; flex-wrap:wrap; gap:10px 20px; align-items:center; justify-content:center; font-family:'HN Cn',sans-serif; font-size:11px; letter-spacing:.24em; color:rgba(255,255,255,.35); text-transform:uppercase;">
       <span>© 2026 ONYX Barber Studio</span>
       <span style="opacity:.4;">·</span>
+      <a href="privacidad.html" style="font-family:'HN Cn',sans-serif; font-size:11px; letter-spacing:.24em; color:rgba(255,255,255,.4); text-transform:uppercase; text-decoration:none;">Privacidad y condiciones</a>
+      <span style="opacity:.4;">·</span>
       <button id="ox-admin-open" type="button" style="background:none; border:none; cursor:pointer; font-family:'HN Cn',sans-serif; font-size:11px; letter-spacing:.24em; color:rgba(255,255,255,.4); text-transform:uppercase; padding:0;">Panel del barbero</button>
     </div>
   </footer>
@@ -446,10 +489,13 @@ class Component extends DCLogic {
     // Si el usuario pidió menos animación, mostramos todo estático y saltamos los reveals.
     const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduceMotion) {
-      // Sin animación: contenido estático y sin Vanta (queda el negro sólido de fondo).
+      // Sin animación: contenido estático. El 3D no se enciende (mueve mucho),
+      // pero sí el fondo de CSS, que con "movimiento reducido" queda quieto:
+      // así la página conserva su textura en vez de un negro plano.
       document.querySelectorAll('[data-reveal],[data-title-block]').forEach((el) => {
         el.style.opacity = '1'; el.style.transform = 'none'; el.style.filter = 'none';
       });
+      this.fondoDeRespaldo();
       this.initBooking();
       return;
     }
@@ -534,12 +580,23 @@ class Component extends DCLogic {
   // ============ FONDO ANIMADO (Vanta WAVES) ============
   // three.js y vanta.waves cargan async desde el <helmet>; el componente puede montar
   // antes de que existan window.THREE / window.VANTA, así que reintentamos hasta 10s.
+  // Fondo de respaldo en CSS: se enciende cuando el 3D no llegó a montarse.
+  // Es lo que ve la mayoría de los teléfonos, así que no puede quedar negro pelado.
+  fondoDeRespaldo() {
+    const el = document.getElementById('ox-vanta');
+    if (el && !this.vantaEffect) el.classList.add('ox-css-bg');
+  }
+
   initVanta(tries) {
     tries = tries || 0;
     if (this.vantaEffect) return;
     const el = document.getElementById('ox-vanta');
+    // A los 2 segundos sin 3D ya se enciende el respaldo: mejor que el visitante
+    // vea el fondo bonito de una vez y no un rectángulo negro mientras carga.
+    if (tries === 20) this.fondoDeRespaldo();
     if (window.VANTA && window.VANTA.WAVES && window.THREE && el) {
-      this.vantaEffect = window.VANTA.WAVES({
+      try {
+        this.vantaEffect = window.VANTA.WAVES({
         el: el,
         THREE: window.THREE,
         mouseControls: true,
@@ -553,11 +610,21 @@ class Component extends DCLogic {
         shininess: 12,
         waveHeight: 10,
         waveSpeed: 0.7,
-        zoom: 0.65,
-        backgroundColor: 0x000000,
-      });
+          zoom: 0.65,
+          backgroundColor: 0x000000,
+        });
+        // Si el navegador no da contexto 3D, Vanta devuelve algo sin escena.
+        // En ese caso nos quedamos con el fondo de CSS, que sí se ve.
+        if (!el.querySelector('canvas')) { this.vantaEffect = null; this.fondoDeRespaldo(); }
+        else el.classList.remove('ox-css-bg');
+      } catch (e) {
+        this.vantaEffect = null;
+        this.fondoDeRespaldo();
+      }
     } else if (tries < 100) {
       setTimeout(() => this.initVanta(tries + 1), 100);
+    } else {
+      this.fondoDeRespaldo();   // se acabó la espera: nunca cargó el 3D
     }
   }
   componentWillUnmount() {
@@ -738,7 +805,7 @@ class Component extends DCLogic {
       + '<div><label style="' + lab + '">Teléfono</label><input id="bk-tel" type="tel" value="' + this.esc(f.telefono || '+506 ') + '" style="' + inp + '"></div>'
       + '<div><label style="' + lab + '">Email</label><input id="bk-email" type="email" value="' + this.esc(f.email || '') + '" placeholder="tucorreo@mail.com" style="' + inp + '"></div>'
       + '<div><label style="' + lab + '">Mensaje <span style="text-transform:none; letter-spacing:0; color:rgba(255,255,255,.35);">(opcional)</span></label><textarea id="bk-msg" rows="3" placeholder="Algo que debamos saber" style="' + inp + ' resize:vertical; font-family:\'HN Cn\',sans-serif;">' + this.esc(f.mensaje || '') + '</textarea></div>'
-      + '<label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; margin-top:2px;"><input id="bk-acepto" type="checkbox" ' + (f.acepto ? 'checked' : '') + ' style="margin-top:3px; accent-color:#fff;"><span style="font-family:\'HN Cn\',sans-serif; font-size:13px; line-height:1.5; color:rgba(255,255,255,.6);">He leído y acepto los términos de la reserva.</span></label>'
+      + '<label style="display:flex; align-items:flex-start; gap:10px; cursor:pointer; margin-top:2px;"><input id="bk-acepto" type="checkbox" ' + (f.acepto ? 'checked' : '') + ' style="margin-top:3px; accent-color:#fff;"><span style="font-family:\'HN Cn\',sans-serif; font-size:13px; line-height:1.5; color:rgba(255,255,255,.6);">He leído y acepto la <a href="privacidad.html" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="color:#fff; text-decoration:underline; text-underline-offset:3px;">política de privacidad y las condiciones de reserva</a>.</span></label>'
       + '<div id="bk-err" style="display:none; font-family:\'HN Cn\',sans-serif; font-size:13px; color:#e8837c;"></div>'
       + '<div style="font-family:\'HN Cn\',sans-serif; font-size:12px; color:rgba(255,255,255,.4); text-align:center; margin-top:2px;">Te guardamos el campo por <span id="ox-countdown">9:55</span></div>'
       + '</div></div>';
