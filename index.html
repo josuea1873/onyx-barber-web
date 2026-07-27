@@ -83,26 +83,27 @@
   }
   #ox-vanta.ox-css-bg::before,
   #ox-vanta.ox-css-bg::after {
-    content: ''; position: absolute; left: -60%; right: -60%; height: 62vh; bottom: -12vh;
+    content: ''; position: absolute; left: -60%; right: -60%; height: 78vh; bottom: -14vh;
     background: repeating-linear-gradient(
       100deg,
-      transparent 0 38px,
-      rgba(255,255,255,.055) 38px 40px,
-      transparent 40px 96px
+      transparent 0 30px,
+      rgba(255,255,255,.13) 30px 33px,
+      rgba(255,255,255,.05) 33px 38px,
+      transparent 38px 82px
     );
     transform: rotate(-7deg);
-    animation: ox-ola 26s linear infinite;
+    animation: ox-ola 22s linear infinite;
     will-change: transform;
   }
   #ox-vanta.ox-css-bg::after {
-    height: 46vh; bottom: 4vh; opacity: .55;
+    height: 58vh; bottom: 6vh; opacity: .6;
     transform: rotate(5deg);
-    animation-duration: 38s;
+    animation-duration: 34s;
     animation-direction: reverse;
   }
   @keyframes ox-ola {
     from { transform: rotate(-7deg) translateX(0); }
-    to   { transform: rotate(-7deg) translateX(-96px); }
+    to   { transform: rotate(-7deg) translateX(-82px); }
   }
   /* Si el sistema pide menos movimiento, se queda quieto pero sigue viéndose. */
   @media (prefers-reduced-motion: reduce) {
@@ -587,10 +588,20 @@ class Component extends DCLogic {
     if (el && !this.vantaEffect) el.classList.add('ox-css-bg');
   }
 
+  // En teléfono NO intentamos el 3D. Muchos navegadores móviles lo montan pero
+  // no lo dibujan (o lo apagan por batería), y el resultado era un negro plano.
+  // El fondo de CSS se ve bien, gasta poquísimo y funciona en todos por igual.
+  esTelefono() {
+    return window.matchMedia
+      ? window.matchMedia('(max-width: 860px), (pointer: coarse)').matches
+      : window.innerWidth <= 860;
+  }
+
   initVanta(tries) {
     tries = tries || 0;
     if (this.vantaEffect) return;
     const el = document.getElementById('ox-vanta');
+    if (this.esTelefono()) { this.fondoDeRespaldo(); return; }
     // A los 2 segundos sin 3D ya se enciende el respaldo: mejor que el visitante
     // vea el fondo bonito de una vez y no un rectángulo negro mientras carga.
     if (tries === 20) this.fondoDeRespaldo();
